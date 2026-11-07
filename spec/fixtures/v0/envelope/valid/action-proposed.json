@@ -1,0 +1,66 @@
+{
+  "specversion": "1.0",
+  "id": "01JC9Q3W8M2X7ZK4T5R6Y80002",
+  "source": "agent:field-station",
+  "type": "action.proposed",
+  "time": "2026-11-06T18:20:11Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://autonomy.local/spec/v0/action-proposal.schema.json",
+  "data": {
+    "proposal_id": "prp_01JC9Q40000000000000000001",
+    "proposer": "agent:field-station",
+    "objective": {
+      "id": "obj_irrigation_tuning",
+      "text": "Keep tree row soil within learned band while minimising water"
+    },
+    "action": {
+      "type": "ha.helper.set",
+      "target": "input_number.farm_irrigation_recommended_climate_factor",
+      "params": {
+        "value": 118
+      }
+    },
+    "rationale": "ET0 3-day mean 6.1 mm vs baseline 5.2 mm; tree row drying rate above band for 2 days.",
+    "inputs": [
+      {
+        "ref": "evt:01JC9Q3W8M2X7ZK4T5R6Y80001",
+        "trust": "trusted",
+        "observed_at": "2026-11-06T18:20:09Z"
+      },
+      {
+        "ref": "fact:et0_daily_2026-11-06",
+        "trust": "trusted"
+      }
+    ],
+    "expected_effect": {
+      "kind": "state_equals",
+      "entity": "input_number.farm_irrigation_recommended_climate_factor",
+      "value": 118,
+      "within_s": 30
+    },
+    "verification": {
+      "probe": "ha.state",
+      "independent": false,
+      "note": "Helper write; downstream effect verified by A01 next day via soil wet-up"
+    },
+    "reversibility": {
+      "undo": {
+        "type": "ha.helper.set",
+        "params": {
+          "value": "previous"
+        }
+      }
+    },
+    "freshness_s": 3600,
+    "idempotency_key": "field-station:climate_factor:2026-11-07"
+  },
+  "seq": 731,
+  "expires": "2026-11-06T19:20:11Z",
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+  "causationid": "01JC9Q3W8M2X7ZK4T5R6Y80001",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "principal": "agent:field-station",
+  "trust": "trusted",
+  "privacy": "site",
+  "autonomysig": "ed25519:isv62jLqrWFyhV2Hh-5VCdO7kQjkYdzVb1sx-E1YZK8WzKt_JoR8Bno0WktfI99FTPCtbMYg37J31udGhJiHAw"
+}

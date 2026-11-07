@@ -1,0 +1,18 @@
+{
+  "proposal_id": "prp_01JC9Q40000000000000000001",
+  "principal": "agent:field-station",
+  "action": "ha.helper.set",
+  "resource": "input_number.farm_irrigation_recommended_climate_factor",
+  "context": {
+    "risk_class": "R1",
+    "evaluation": "ok",
+    "trust": "trusted",
+    "cell": "field-station",
+    "power_stage": "normal",
+    "count_today": 1,
+    "now": "2026-11-06T18:25:00Z",
+    "params": {
+      "value": 118
+    }
+  }
+}

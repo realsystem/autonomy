@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/verification.schema.json",
+  "title": "Verification",
+  "description": "C14's signed finding on whether an action's expected effect happened.",
+  "type": "object",
+  "required": ["verification_id", "action_id", "result", "observations", "independent", "verifier", "signature"],
+  "properties": {
+    "verification_id": {"$ref": "common.schema.json#/$defs/verification_id"},
+    "action_id": {"$ref": "common.schema.json#/$defs/action_id"},
+    "result": {
+      "description": "confirmed · not_confirmed (no evidence within window) · contradicted (evidence of a different outcome) · inconclusive.",
+      "type": "string",
+      "enum": ["confirmed", "not_confirmed", "contradicted", "inconclusive"]
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ref", "observed_at", "path"],
+        "properties": {
+          "ref": {"$ref": "common.schema.json#/$defs/ref"},
+          "value": {},
+          "observed_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+          "path": {"$ref": "common.schema.json#/$defs/dotted_name", "description": "Observation path, e.g. ha.state; compared with the action path to judge independence."}
+        },
+        "additionalProperties": true
+      }
+    },
+    "independent": {"type": "boolean"},
+    "verified_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "note": {"type": "string", "maxLength": 2000},
+    "verifier": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "signature": {"$ref": "common.schema.json#/$defs/signature"}
+  },
+  "additionalProperties": true,
+  "if": {"properties": {"result": {"enum": ["confirmed", "contradicted"]}}},
+  "then": {"properties": {"observations": {"minItems": 1}}}
+}

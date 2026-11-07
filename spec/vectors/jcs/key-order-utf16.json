@@ -1,0 +1,11 @@
+{
+  "input": {
+    "€": "euro",
+    "\r": "cr",
+    "😀": "emoji",
+    "｡": "halfwidth-stop",
+    "1": "one",
+    "ö": "o-umlaut"
+  },
+  "canonical": "{\"\\r\":\"cr\",\"1\":\"one\",\"ö\":\"o-umlaut\",\"€\":\"euro\",\"😀\":\"emoji\",\"｡\":\"halfwidth-stop\"}"
+}

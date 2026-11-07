@@ -1,0 +1,33 @@
+{
+  "evaluation_id": "evl_01JC9Q40000000000000000001",
+  "proposal_id": "prp_01JC9Q40000000000000000001",
+  "risk_class": "R1",
+  "checks": [
+    {
+      "name": "schema",
+      "ok": true
+    },
+    {
+      "name": "inputs_fresh",
+      "ok": true
+    },
+    {
+      "name": "invariant.value_range",
+      "ok": true
+    },
+    {
+      "name": "conflicts",
+      "ok": true
+    },
+    {
+      "name": "llm_review",
+      "ok": true,
+      "advisory": true,
+      "model": "local:qwen2.5-14b",
+      "note": "rationale consistent with inputs"
+    }
+  ],
+  "outcome": "ok",
+  "escalation_reasons": [],
+  "evaluated_at": "2026-11-06T18:24:58Z"
+}

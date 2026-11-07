@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/job.schema.json",
+  "title": "Job",
+  "description": "A unit of compute for C07 Job Service. Submitters omit job_id, status and attempt; the Job Service sets them in job records and job.* events. An executor that receives untrusted input may not submit R1+ ActionRequests with that job's principal.",
+  "type": "object",
+  "required": ["job_type", "job_type_version", "input", "input_trust", "idempotency_key", "submitted_by", "correlationid", "traceparent"],
+  "properties": {
+    "job_id": {"$ref": "common.schema.json#/$defs/job_id"},
+    "job_type": {"$ref": "common.schema.json#/$defs/dotted_name"},
+    "job_type_version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "input": {"description": "Validated against the input schema registered for job_type@job_type_version."},
+    "input_trust": {"$ref": "common.schema.json#/$defs/trust"},
+    "privacy": {"$ref": "common.schema.json#/$defs/routing_privacy", "description": "local_only jobs run only on a worker of the originating cell. Default cloud_ok."},
+    "priority": {"type": "integer", "minimum": 0, "maximum": 100},
+    "max_attempts": {"type": "integer", "minimum": 1, "maximum": 100},
+    "timeout_s": {"type": "integer", "minimum": 1},
+    "idempotency_key": {"$ref": "common.schema.json#/$defs/idempotency_key", "description": "Unique per submitted_by; resubmission returns the existing job."},
+    "submitted_by": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"},
+    "traceparent": {"$ref": "common.schema.json#/$defs/traceparent"},
+    "requires": {
+      "type": "object",
+      "properties": {
+        "capabilities": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9_:.-]*$"}, "uniqueItems": true},
+        "cell": {"oneOf": [{"$ref": "common.schema.json#/$defs/cell"}, {"type": "null"}]}
+      },
+      "additionalProperties": true
+    },
+    "result_schema": {"type": "string", "format": "uri"},
+    "status": {"type": "string", "enum": ["queued", "leased", "running", "succeeded", "failed", "dead_letter", "cancelled"]},
+    "attempt": {"type": "integer", "minimum": 0},
+    "result": {"description": "Present when status is succeeded; validated against result_schema."},
+    "error": {"$ref": "error.schema.json#/$defs/error_body"}
+  },
+  "additionalProperties": true
+}

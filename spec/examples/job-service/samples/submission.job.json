@@ -1,0 +1,25 @@
+{
+  "job_type": "video.frames",
+  "job_type_version": "1.2",
+  "input": {
+    "source": "https://www.youtube.com/watch?v=abc123",
+    "fps": 1
+  },
+  "input_trust": "untrusted",
+  "privacy": "cloud_ok",
+  "priority": 10,
+  "max_attempts": 3,
+  "timeout_s": 1800,
+  "idempotency_key": "media:frames:yt:abc123:fps1",
+  "submitted_by": "agent:research",
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "requires": {
+    "capabilities": [
+      "gpu",
+      "ollama"
+    ],
+    "cell": null
+  },
+  "result_schema": "https://autonomy.local/spec/v0/jobs/video.frames.result.json"
+}

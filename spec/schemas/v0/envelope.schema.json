@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/envelope.schema.json",
+  "title": "Envelope",
+  "description": "Every message crossing a component boundary: a CloudEvents 1.0 structured-mode JSON document with Autonomy extension attributes, signed by the sender. Receivers ignore unknown extension attributes.",
+  "type": "object",
+  "required": ["specversion", "id", "source", "type", "time", "seq", "correlationid", "traceparent", "principal", "trust", "privacy", "autonomysig"],
+  "propertyNames": {
+    "description": "CloudEvents attribute names: lowercase letters and digits only. Excludes data_base64 (binary data is not used in v0).",
+    "pattern": "^(?:[a-z0-9]{1,20}|data)$"
+  },
+  "properties": {
+    "specversion": {"const": "1.0"},
+    "id": {"$ref": "common.schema.json#/$defs/ulid", "description": "Unique per source."},
+    "source": {"$ref": "common.schema.json#/$defs/component_ref", "description": "Sender component or instance."},
+    "type": {"$ref": "common.schema.json#/$defs/event_type", "description": "<domain>.<entity>.<verb_past_tense> for facts, <domain>.<entity>.<verb> for commands."},
+    "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+    "time": {"$ref": "common.schema.json#/$defs/timestamp", "description": "Required in Autonomy (optional in CloudEvents) for skew checks."},
+    "datacontenttype": {"const": "application/json"},
+    "dataschema": {"type": "string", "format": "uri"},
+    "data": {"description": "Any JSON value. When dataschema names a spec schema, data must validate against it."},
+    "seq": {"$ref": "common.schema.json#/$defs/safe_int", "description": "Monotonic per sender, survives restarts; used for dedup and ordering."},
+    "expires": {"$ref": "common.schema.json#/$defs/timestamp", "description": "Receiver rejects after this time. Required by receivers for commands."},
+    "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"},
+    "causationid": {"$ref": "common.schema.json#/$defs/ulid", "description": "id of the envelope that caused this one."},
+    "traceparent": {"$ref": "common.schema.json#/$defs/traceparent"},
+    "principal": {"$ref": "common.schema.json#/$defs/component_ref", "description": "Identity on whose behalf this is sent; usually equal to source."},
+    "trust": {"$ref": "common.schema.json#/$defs/trust"},
+    "privacy": {"$ref": "common.schema.json#/$defs/privacy"},
+    "autonomysig": {"$ref": "common.schema.json#/$defs/signature", "description": "Signature over the canonical JSON of the envelope without autonomysig."}
+  },
+  "additionalProperties": true
+}

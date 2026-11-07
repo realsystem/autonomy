@@ -1,0 +1,20 @@
+{
+  "record": {
+    "seq": 0,
+    "prev_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "cell": "field-station",
+    "time": "2026-11-06T18:25:00Z",
+    "actor": "svc:pdp@field-station",
+    "kind": "action.decided",
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "refs": {
+      "proposal": "prp_01JC9Q40000000000000000001",
+      "decision": "dec_01JC9Q40000000000000000001"
+    },
+    "summary": "Permitted ha.helper.set on recommended climate factor (grant grt_2026_11_farm_helpers)",
+    "hash": "sha256:4289217381fb3557a26acdfdf2b83bc344a9a69beddc16b4c6dda4989c090ca9",
+    "signature": "ed25519:uIatQrSqU1DdWwWV7ooNAbGZKkdA_0aC587jAiIXU0QVoj0krvZmn-vObJ7BCEnfV3Jkvt_P7cn13QojPGbTAQ"
+  },
+  "hash_input": "sha256:0000000000000000000000000000000000000000000000000000000000000000{\"actor\":\"svc:pdp@field-station\",\"cell\":\"field-station\",\"correlationid\":\"corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R\",\"kind\":\"action.decided\",\"prev_hash\":\"sha256:0000000000000000000000000000000000000000000000000000000000000000\",\"refs\":{\"decision\":\"dec_01JC9Q40000000000000000001\",\"proposal\":\"prp_01JC9Q40000000000000000001\"},\"seq\":0,\"summary\":\"Permitted ha.helper.set on recommended climate factor (grant grt_2026_11_farm_helpers)\",\"time\":\"2026-11-06T18:25:00Z\"}",
+  "hash": "sha256:4289217381fb3557a26acdfdf2b83bc344a9a69beddc16b4c6dda4989c090ca9"
+}

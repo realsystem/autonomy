@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/evaluation.schema.json",
+  "title": "Evaluation",
+  "description": "C13's judgement of a proposal (C13 → C04). outcome escalate forces require_approval. Advisory checks (LLM review) can turn ok into escalate or reject, never the reverse (ADR-008).",
+  "type": "object",
+  "required": ["evaluation_id", "proposal_id", "risk_class", "checks", "outcome", "escalation_reasons"],
+  "properties": {
+    "evaluation_id": {"$ref": "common.schema.json#/$defs/evaluation_id"},
+    "proposal_id": {"$ref": "common.schema.json#/$defs/proposal_id"},
+    "risk_class": {"$ref": "common.schema.json#/$defs/risk_class"},
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "ok"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$"},
+          "ok": {"type": "boolean"},
+          "advisory": {"type": "boolean", "description": "true for LLM or other non-deterministic checks."},
+          "model": {"type": "string", "maxLength": 128},
+          "note": {"type": "string", "maxLength": 2000}
+        },
+        "additionalProperties": true
+      }
+    },
+    "outcome": {"type": "string", "enum": ["ok", "escalate", "reject"]},
+    "escalation_reasons": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 500}},
+    "evaluated_at": {"$ref": "common.schema.json#/$defs/timestamp"}
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "description": "ok requires every check to pass, advisory ones included.",
+      "if": {"properties": {"outcome": {"const": "ok"}}},
+      "then": {"properties": {"checks": {"items": {"properties": {"ok": {"const": true}}}}}}
+    },
+    {
+      "description": "escalate must say why.",
+      "if": {"properties": {"outcome": {"const": "escalate"}}},
+      "then": {"properties": {"escalation_reasons": {"minItems": 1}}}
+    },
+    {
+      "description": "reject requires at least one failing check.",
+      "if": {"properties": {"outcome": {"const": "reject"}}},
+      "then": {"properties": {"checks": {"contains": {"properties": {"ok": {"const": false}}}}}}
+    }
+  ]
+}

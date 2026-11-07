@@ -1,0 +1,11 @@
+{
+  "action_id": "act_01JC9Q40000000000000000003",
+  "status": "rejected",
+  "error": {
+    "code": "validation.expired",
+    "message": "decision dec_01JC9Q40000000000000000001 expired at 2026-11-06T18:40:00Z",
+    "retryable": false
+  },
+  "executor": "svc:action-gateway@field-station",
+  "signature": "ed25519:13SpQVb1tjH-wQmZ8VB5FrkEcPsVx87mhUXFlMnpEcbNCdJPjeLLI0S87z619dsdZb2X-Y7AEfrn8TwfnjDwCw"
+}

@@ -1,0 +1,18 @@
+{
+  "description": "readiness exposes the effective config hash",
+  "expect": "'config_hash' is a required property",
+  "instance": {
+    "status": "degraded",
+    "checks": [
+      {
+        "name": "sqlite",
+        "ok": true
+      },
+      {
+        "name": "model-gateway",
+        "ok": false,
+        "impact": "recommendations paused"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "description": "hash covers the record",
+  "expect": "hash does not match",
+  "instance": {
+    "seq": 1,
+    "prev_hash": "sha256:4289217381fb3557a26acdfdf2b83bc344a9a69beddc16b4c6dda4989c090ca9",
+    "cell": "field-station",
+    "time": "2026-11-06T18:25:02Z",
+    "actor": "svc:action-gateway@field-station",
+    "kind": "action.succeeded",
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "refs": {
+      "proposal": "prp_01JC9Q40000000000000000001",
+      "decision": "dec_01JC9Q40000000000000000001",
+      "action": "act_01JC9Q40000000000000000001"
+    },
+    "summary": "Set recommended climate factor 104 → 200",
+    "hash": "sha256:c012be887deb45201213b71d908a0a66227750c22dcd1316feeaa5762418d220",
+    "signature": "ed25519:yrNalfQx_Sy3zwGCa-Ov1movoAeYVENZcALQ4WPXvYZU_avQNx-LupjPwMLcaFmPzDIg1ZhdstJ9w50yjImKCQ"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "description": "succeeded needs started_at",
+  "expect": "'started_at' is a required property",
+  "instance": {
+    "action_id": "act_01JC9Q40000000000000000001",
+    "status": "succeeded",
+    "adapter": "adapter:ha@field-station",
+    "finished_at": "2026-11-06T18:25:02Z",
+    "adapter_response": {
+      "ok": true
+    },
+    "before": {
+      "value": 104
+    },
+    "after_reported": {
+      "value": 118
+    },
+    "verification_pending": true,
+    "executor": "svc:action-gateway@field-station",
+    "signature": "ed25519:3lKzBLscCagAPHf9BK0u2moFSCmHV55-OBAi7WqV7LKQJv29a-IGdIUuLfGxjS5tCBauZg6FPOTsERTRAJ1sAw"
+  }
+}

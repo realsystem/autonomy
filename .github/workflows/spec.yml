@@ -1,0 +1,97 @@
+name: spec
+
+# Checks for the contracts in spec/. Runs on PRs and pushes to main that touch
+# spec/ or the workflows, on demand, and as the first stage of spec-release.yml.
+on:
+  pull_request:
+    paths: ["spec/**", ".github/workflows/spec*.yml"]
+  push:
+    branches: [main]
+    paths: ["spec/**", ".github/workflows/spec*.yml"]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spec-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: test (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags, for the compatibility check
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: spec/pyproject.toml
+      - name: Install
+        run: pip install "./spec[test]"
+      - name: Unit tests (schemas valid, vectors, CLI, compat checker)
+        working-directory: spec
+        run: python -m pytest -q
+      - name: Fixtures validate
+        working-directory: spec
+        run: python -m autonomy_conformance selftest
+      - name: Generated fixtures, vectors and examples are up to date
+        run: python spec/tools/gen_fixtures.py --check
+      - name: Example components pass conformance
+        working-directory: spec
+        run: |
+          autonomy-conformance check --manifest examples/job-service/autonomy.manifest.json \
+            --samples examples/job-service/samples --level L2 --keys fixtures/keys/test-keys.json --strict
+          autonomy-conformance check --manifest examples/cell-runtime/autonomy.manifest.json \
+            --samples examples/cell-runtime/samples --level L0 --keys fixtures/keys/test-keys.json --strict
+      - name: Backward compatibility with the previous spec-v0.* tag
+        run: bash spec/tools/compat_against_tag.sh
+
+  package:
+    name: package (wheel carries the schemas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build wheel
+        run: pip wheel --no-deps -w dist ./spec
+      - name: Install the wheel in a clean venv and run it outside the source tree
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/venv/bin/autonomy-conformance --version
+          n=$(/tmp/venv/bin/autonomy-conformance schemas | tail -n +2 | wc -l)
+          echo "bundled schemas: $n"
+          test "$n" -eq "$(find "$GITHUB_WORKSPACE/spec/schemas/v0" -name '*.schema.json' | wc -l)"
+          /tmp/venv/bin/autonomy-conformance selftest --fixtures "$GITHUB_WORKSPACE/spec/fixtures/v0"
+          /tmp/venv/bin/autonomy-conformance check \
+            --manifest "$GITHUB_WORKSPACE/spec/examples/job-service/autonomy.manifest.json" \
+            --samples "$GITHUB_WORKSPACE/spec/examples/job-service/samples" --level L2 --strict
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autonomy-conformance-wheel
+          path: dist/*.whl
+          if-no-files-found: error
+
+  lint:
+    name: lint (shell, workflows)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck spec/tools/*.sh
+      - name: actionlint
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -color

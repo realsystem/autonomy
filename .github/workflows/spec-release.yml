@@ -1,0 +1,47 @@
+name: spec-release
+
+# Push a tag spec-vX.Y.Z to release the contracts: all spec checks run first,
+# then the tag must match the package version and CHANGELOG, and a GitHub
+# release is created with the wheel attached.
+on:
+  push:
+    tags: ["spec-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/spec.yml
+
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Tag matches package, spec and changelog versions
+        run: |
+          want="${GITHUB_REF_NAME#spec-v}"
+          pkg=$(python -c "import tomllib; print(tomllib.load(open('spec/pyproject.toml','rb'))['project']['version'])")
+          spec=$(grep -Po '^SPEC_VERSION = "\K[^"]+' spec/autonomy_conformance/schemas.py)
+          init=$(grep -Po '^__version__ = "\K[^"]+' spec/autonomy_conformance/__init__.py)
+          echo "tag=$want pyproject=$pkg SPEC_VERSION=$spec __version__=$init"
+          test "$want" = "$pkg" && test "$want" = "$spec" && test "$want" = "$init"
+          grep -q "^## $want " spec/CHANGELOG.md || { echo "CHANGELOG.md has no '## $want' entry"; exit 1; }
+          if grep -q "^## $want .*unreleased" spec/CHANGELOG.md; then echo "CHANGELOG.md still marks $want unreleased"; exit 1; fi
+      - name: Build wheel
+        run: pip wheel --no-deps -w dist ./spec
+      - name: Release notes from CHANGELOG
+        run: |
+          want="${GITHUB_REF_NAME#spec-v}"
+          awk -v v="$want" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' spec/CHANGELOG.md > notes.md
+          cat notes.md
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.whl --title "Autonomy contracts $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

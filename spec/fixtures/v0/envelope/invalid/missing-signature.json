@@ -1,0 +1,25 @@
+{
+  "description": "every envelope is signed",
+  "expect": "'autonomysig' is a required property",
+  "instance": {
+    "specversion": "1.0",
+    "id": "01JC9Q3W8M2X7ZK4T5R6Y80001",
+    "source": "adapter:ha@field-station",
+    "type": "observation.ha.state_changed",
+    "subject": "sensor.farm_soil_tree_row_1_moisture",
+    "time": "2026-11-06T18:20:11Z",
+    "datacontenttype": "application/json",
+    "data": {
+      "value": 18.4,
+      "unit": "%",
+      "valid": true,
+      "observed_at": "2026-11-06T18:20:09Z"
+    },
+    "seq": 48213,
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    "principal": "adapter:ha@field-station",
+    "trust": "trusted",
+    "privacy": "site"
+  }
+}

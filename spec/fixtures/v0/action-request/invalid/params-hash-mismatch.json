@@ -1,0 +1,81 @@
+{
+  "description": "decision binds the exact parameters",
+  "expect": "does not bind proposal.action",
+  "instance": {
+    "action_id": "act_01JC9Q40000000000000000001",
+    "proposal": {
+      "proposal_id": "prp_01JC9Q40000000000000000001",
+      "proposer": "agent:field-station",
+      "objective": {
+        "id": "obj_irrigation_tuning",
+        "text": "Keep tree row soil within learned band while minimising water"
+      },
+      "action": {
+        "type": "ha.helper.set",
+        "target": "input_number.farm_irrigation_recommended_climate_factor",
+        "params": {
+          "value": 118
+        }
+      },
+      "rationale": "ET0 3-day mean 6.1 mm vs baseline 5.2 mm; tree row drying rate above band for 2 days.",
+      "inputs": [
+        {
+          "ref": "evt:01JC9Q3W8M2X7ZK4T5R6Y80001",
+          "trust": "trusted",
+          "observed_at": "2026-11-06T18:20:09Z"
+        },
+        {
+          "ref": "fact:et0_daily_2026-11-06",
+          "trust": "trusted"
+        }
+      ],
+      "expected_effect": {
+        "kind": "state_equals",
+        "entity": "input_number.farm_irrigation_recommended_climate_factor",
+        "value": 118,
+        "within_s": 30
+      },
+      "verification": {
+        "probe": "ha.state",
+        "independent": false,
+        "note": "Helper write; downstream effect verified by A01 next day via soil wet-up"
+      },
+      "reversibility": {
+        "undo": {
+          "type": "ha.helper.set",
+          "params": {
+            "value": "previous"
+          }
+        }
+      },
+      "freshness_s": 3600,
+      "idempotency_key": "field-station:climate_factor:2026-11-07"
+    },
+    "decision": {
+      "decision_id": "dec_01JC9Q40000000000000000001",
+      "proposal_id": "prp_01JC9Q40000000000000000001",
+      "effect": "permit",
+      "matched": [
+        "grt_2026_11_farm_helpers",
+        "policy:farm/helpers.cedar#p3"
+      ],
+      "obligations": [
+        {
+          "type": "verify"
+        },
+        {
+          "type": "rate_limit",
+          "key": "agent:field-station:ha.helper.set",
+          "max_per_day": 4
+        }
+      ],
+      "params_hash": "sha256:3c4fc639d4786bec71d0277c81d0774859e6e995a4cb2a1a764d96dc24f649af",
+      "decided_at": "2026-11-06T18:25:00Z",
+      "expires": "2026-11-06T18:40:00Z",
+      "policy_bundle": "2026.11.06-1",
+      "issuer": "svc:pdp@field-station",
+      "signature": "ed25519:hirsoR2XGQkVZAvAfre92bXfEDCh1CBvEod1o1Tg4nmySUKcl73SYU1rK2UYB8FO220TjIvcHhRONSXV2HFMDQ"
+    },
+    "idempotency_key": "field-station:climate_factor:2026-11-07"
+  }
+}

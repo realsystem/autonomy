@@ -1,0 +1,23 @@
+{
+  "description": "time order",
+  "expect": "finished_at is before started_at",
+  "instance": {
+    "action_id": "act_01JC9Q40000000000000000001",
+    "status": "succeeded",
+    "adapter": "adapter:ha@field-station",
+    "started_at": "2026-11-06T18:25:01Z",
+    "finished_at": "2026-11-06T18:24:00Z",
+    "adapter_response": {
+      "ok": true
+    },
+    "before": {
+      "value": 104
+    },
+    "after_reported": {
+      "value": 118
+    },
+    "verification_pending": true,
+    "executor": "svc:action-gateway@field-station",
+    "signature": "ed25519:7uzUpmk4Waxz6F3GVH-eQMhLoC3v3_oeKuDyGJmTNuAH4sXD7rZ8Yt0H6ijbfoFjnAEVHQ_vYMPzarWaUsAyCQ"
+  }
+}

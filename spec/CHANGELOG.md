@@ -1,0 +1,13 @@
+# Changelog — Autonomy contracts (`spec`)
+
+Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
+
+## 0.1.0 — unreleased (M1)
+
+First frozen contracts.
+
+- Schemas (`schemas/v0/`): common, manifest, envelope, health, ready, cell-status, error, log-record, grant, action-proposal, evaluation, decision-request, decision, approval, action-request, execution-record, verification, audit-record, job.
+- `autonomy-conformance` CLI: `check`, `validate`, `selftest`, `compat`, `canonicalize`, `params-hash`, `schemas`.
+- Exact rules for RFC 8785 canonicalization, signatures, `params_hash` and the audit hash chain, with vectors.
+- Valid and invalid fixtures for every schema; draft example manifests for C07 Job Service and C10 Cell Runtime.
+- Resolved design ambiguities: see [README.md#decisions-made-in-v01-where-the-design-was-open](README.md#decisions-made-in-v01-where-the-design-was-open).

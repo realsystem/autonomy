@@ -1,0 +1,31 @@
+{
+  "specversion": "1.0",
+  "id": "01JC9Q3W8M2X7ZK4T5R6Y80003",
+  "source": "agent:field-station",
+  "type": "health.reported",
+  "time": "2026-11-06T18:20:11Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://autonomy.local/spec/v0/health.schema.json",
+  "data": {
+    "status": "degraded",
+    "component_id": "agent:field-station",
+    "version": "0.5.0",
+    "uptime_s": 86400,
+    "config_hash": "sha256:6cb511c4d6c7966c05745c31e74401ad0c885fddf0f2bd2b859825fc9f1d7072",
+    "checks": [
+      {
+        "name": "model-gateway",
+        "ok": false,
+        "impact": "recommendations paused",
+        "safety": false
+      }
+    ]
+  },
+  "seq": 732,
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "principal": "agent:field-station",
+  "trust": "trusted",
+  "privacy": "site",
+  "autonomysig": "ed25519:J-cUl5Jr17qkUlHlZ-YayvxJQfifjJRhFMRrJgiLdIqMnnvlHe6AsrnsiEeldf5r5rl431DUs5hIOUXdgjnxBg"
+}

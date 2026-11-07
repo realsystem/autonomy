@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/cell-status.schema.json",
+  "title": "Cell status",
+  "description": "Body of GET /v1/cell, served by C10 Cell Runtime only.",
+  "type": "object",
+  "required": ["cell", "registry_hash", "policy_bundle", "power_stage", "peers"],
+  "properties": {
+    "cell": {"$ref": "common.schema.json#/$defs/cell"},
+    "registry_hash": {"$ref": "common.schema.json#/$defs/sha256", "description": "Hash of the verified registry document this cell enforces."},
+    "policy_bundle": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$", "description": "Policy bundle version, e.g. 2026.11.06-1."},
+    "power_stage": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$", "description": "Current power stage (values are defined per cell, e.g. normal)."},
+    "suspended": {"type": "boolean", "description": "true while system.suspended is in effect on this cell."},
+    "peers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cell"],
+        "properties": {
+          "cell": {"$ref": "common.schema.json#/$defs/cell"},
+          "reachable": {"type": "boolean"},
+          "last_seen_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+          "registry_hash": {"$ref": "common.schema.json#/$defs/sha256"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

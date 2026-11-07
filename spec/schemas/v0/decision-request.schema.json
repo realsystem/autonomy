@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/decision-request.schema.json",
+  "title": "DecisionRequest",
+  "description": "Input to C04's Policy Decision Point: principal, action, resource and context. Context keys beyond those listed are passed to policy as-is.",
+  "type": "object",
+  "required": ["principal", "action", "resource", "context"],
+  "properties": {
+    "proposal_id": {"$ref": "common.schema.json#/$defs/proposal_id"},
+    "principal": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "action": {"$ref": "common.schema.json#/$defs/action_type"},
+    "resource": {"type": "string", "minLength": 1, "maxLength": 256},
+    "context": {
+      "type": "object",
+      "required": ["risk_class", "trust", "cell", "now"],
+      "properties": {
+        "risk_class": {"$ref": "common.schema.json#/$defs/risk_class"},
+        "evaluation": {"type": "string", "enum": ["ok", "escalate", "reject"]},
+        "trust": {"$ref": "common.schema.json#/$defs/trust"},
+        "cell": {"$ref": "common.schema.json#/$defs/cell"},
+        "power_stage": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$"},
+        "count_today": {"type": "integer", "minimum": 0},
+        "now": {"$ref": "common.schema.json#/$defs/timestamp"},
+        "params": {"type": "object"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

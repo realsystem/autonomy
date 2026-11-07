@@ -1,0 +1,19 @@
+{
+  "specversion": "1.0",
+  "id": "01JC9Q3W8M2X7ZK4T5R6Y80069",
+  "source": "cell:field-station",
+  "type": "health.heartbeat",
+  "time": "2026-11-06T18:20:11Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "power_stage": "normal",
+    "uptime_s": 3600
+  },
+  "seq": 5001,
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "principal": "cell:field-station",
+  "trust": "trusted",
+  "privacy": "site",
+  "autonomysig": "ed25519:AvCJ3U6GTqptSgRRh8BQNGUKYVLnxx6sd9vcYmo8IWenHXkD3-QMo_OkmhhwaRHW8Ns9SB7fJg0fewea5g3iBw"
+}

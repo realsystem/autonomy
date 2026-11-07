@@ -1,0 +1,88 @@
+{
+  "description": "proposing actions needs the action-lifecycle contract",
+  "expect": "requires the action-lifecycle contract",
+  "instance": {
+    "$schema": "https://autonomy.local/spec/v0/manifest.schema.json",
+    "component_id": "agent:field-station",
+    "version": "0.5.0",
+    "kind": "agent",
+    "description": "Observes the Field Station and proposes irrigation adjustments.",
+    "repository": "https://github.com/realsystem/farm_agent",
+    "contracts": {
+      "envelope": "^0.1",
+      "health": "^0.1",
+      "audit": "^0.1"
+    },
+    "capabilities": {
+      "provides": [
+        {
+          "name": "farm.assessment.daily",
+          "version": "1.0",
+          "type": "event",
+          "schema": "schemas/assessment.json"
+        }
+      ],
+      "requires": [
+        {
+          "name": "ha.state.read",
+          "version": "^1",
+          "scope": {
+            "entities": [
+              "sensor.farm_*",
+              "binary_sensor.farm_*",
+              "sensor.smartshunt_*",
+              "sensor.eco_worthy_*"
+            ]
+          }
+        },
+        {
+          "name": "model.chat",
+          "version": "^1",
+          "privacy": "cloud_ok"
+        },
+        {
+          "name": "knowledge.space",
+          "version": "^1",
+          "scope": {
+            "space": "agent:field-station"
+          }
+        }
+      ],
+      "proposes_actions": [
+        "ha.helper.set",
+        "notify.owner"
+      ]
+    },
+    "trust_class": "trusted-input",
+    "data": {
+      "owns": [
+        {
+          "store": "sqlite:/data/agent.db",
+          "kind": "agent_memory",
+          "retention_days": 365
+        }
+      ],
+      "reads_from": [
+        "events:observation.ha.*@field-station"
+      ]
+    },
+    "runtime": {
+      "packaging": [
+        "ha-addon"
+      ],
+      "health": {
+        "liveness": "/v1/health",
+        "readiness": "/v1/ready"
+      },
+      "resources": {
+        "memory_mb": 256,
+        "cpu": 0.5
+      }
+    },
+    "dependencies": [
+      "svc:model-gateway",
+      "adapter:ha@field-station",
+      "cell:field-station"
+    ]
+  }
+}
