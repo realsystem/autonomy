@@ -1,0 +1,23 @@
+{
+  "description": "failures carry an error",
+  "expect": "'error' is a required property",
+  "instance": {
+    "action_id": "act_01JC9Q40000000000000000001",
+    "status": "failed",
+    "adapter": "adapter:ha@field-station",
+    "started_at": "2026-11-06T18:25:01Z",
+    "finished_at": "2026-11-06T18:25:02Z",
+    "adapter_response": {
+      "ok": true
+    },
+    "before": {
+      "value": 104
+    },
+    "after_reported": {
+      "value": 118
+    },
+    "verification_pending": true,
+    "executor": "svc:action-gateway@field-station",
+    "signature": "ed25519:zXCo8_MEBNqxDYc2oZSdw95GJ11LWHcYoVg_wNlWPEFFU0kYerCEbkM1rIhVpKJINhxDBFFsurM5SE35GYgxBQ"
+  }
+}

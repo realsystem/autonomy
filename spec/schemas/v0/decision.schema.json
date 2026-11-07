@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/decision.schema.json",
+  "title": "Decision",
+  "description": "C04's signed answer. params_hash binds it to the exact action (type, target, params) of the proposal. Closed: C06 acts on it.",
+  "type": "object",
+  "required": ["decision_id", "proposal_id", "effect", "matched", "obligations", "params_hash", "expires", "policy_bundle", "issuer", "signature"],
+  "properties": {
+    "decision_id": {"$ref": "common.schema.json#/$defs/decision_id"},
+    "proposal_id": {"$ref": "common.schema.json#/$defs/proposal_id"},
+    "effect": {"type": "string", "enum": ["permit", "deny", "require_approval"]},
+    "matched": {
+      "description": "Grants and policies that produced the effect, e.g. grt_..., policy:farm/helpers.cedar#p3.",
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 256}
+    },
+    "obligations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/obligation"}
+    },
+    "params_hash": {"$ref": "common.schema.json#/$defs/sha256"},
+    "decided_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "expires": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "policy_bundle": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$"},
+    "config_hash": {"$ref": "common.schema.json#/$defs/sha256"},
+    "reason": {"type": "string", "maxLength": 1000},
+    "issuer": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "signature": {"$ref": "common.schema.json#/$defs/signature"}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "require_approval must carry an approval obligation.",
+      "if": {"properties": {"effect": {"const": "require_approval"}}},
+      "then": {"properties": {"obligations": {"contains": {"properties": {"type": {"const": "approval"}}}}}}
+    }
+  ],
+  "$defs": {
+    "obligation": {
+      "description": "Conditions C06 must enforce. An executor that does not understand an obligation type must not execute.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "enum": ["verify", "rate_limit", "approval", "notify", "dry_run"]},
+        "key": {"type": "string", "minLength": 1, "maxLength": 256},
+        "max_per_day": {"type": "integer", "minimum": 0},
+        "max_per_hour": {"type": "integer", "minimum": 0},
+        "approver": {"$ref": "common.schema.json#/$defs/owner_id"},
+        "target": {"$ref": "common.schema.json#/$defs/component_ref"}
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "rate_limit"}}}, "then": {"required": ["key"], "anyOf": [{"required": ["max_per_day"]}, {"required": ["max_per_hour"]}]}},
+        {"if": {"properties": {"type": {"const": "approval"}}}, "then": {"required": ["approver"]}}
+      ]
+    }
+  }
+}

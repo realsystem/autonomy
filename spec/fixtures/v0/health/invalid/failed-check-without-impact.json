@@ -1,0 +1,20 @@
+{
+  "description": "impact is mandatory on failed checks",
+  "expect": "'impact' is a required property",
+  "instance": {
+    "status": "degraded",
+    "checks": [
+      {
+        "name": "sqlite",
+        "ok": true
+      },
+      {
+        "name": "model-gateway",
+        "ok": false
+      }
+    ],
+    "config_hash": "sha256:6cb511c4d6c7966c05745c31e74401ad0c885fddf0f2bd2b859825fc9f1d7072",
+    "component_id": "svc:job-service",
+    "version": "1.4.0"
+  }
+}

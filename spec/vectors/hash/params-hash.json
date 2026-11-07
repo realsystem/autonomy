@@ -1,0 +1,11 @@
+{
+  "action": {
+    "type": "ha.helper.set",
+    "target": "input_number.farm_irrigation_recommended_climate_factor",
+    "params": {
+      "value": 118
+    }
+  },
+  "canonical": "{\"params\":{\"value\":118},\"target\":\"input_number.farm_irrigation_recommended_climate_factor\",\"type\":\"ha.helper.set\"}",
+  "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2"
+}

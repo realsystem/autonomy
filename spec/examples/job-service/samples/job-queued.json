@@ -1,0 +1,44 @@
+{
+  "specversion": "1.0",
+  "id": "01JC9Q3W8M2X7ZK4T5R6Y80035",
+  "source": "svc:job-service",
+  "type": "job.queued",
+  "time": "2026-11-06T18:20:11Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://autonomy.local/spec/v0/job.schema.json",
+  "data": {
+    "job_id": "job_01JC9Q40000000000000000001",
+    "job_type": "video.frames",
+    "job_type_version": "1.2",
+    "input": {
+      "source": "https://www.youtube.com/watch?v=abc123",
+      "fps": 1
+    },
+    "input_trust": "untrusted",
+    "privacy": "cloud_ok",
+    "priority": 10,
+    "max_attempts": 3,
+    "timeout_s": 1800,
+    "idempotency_key": "media:frames:yt:abc123:fps1",
+    "submitted_by": "agent:research",
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    "requires": {
+      "capabilities": [
+        "gpu",
+        "ollama"
+      ],
+      "cell": null
+    },
+    "result_schema": "https://autonomy.local/spec/v0/jobs/video.frames.result.json",
+    "status": "queued",
+    "attempt": 0
+  },
+  "seq": 1,
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "principal": "agent:research",
+  "trust": "untrusted",
+  "privacy": "site",
+  "autonomysig": "ed25519:FS6zoOvg9eqvIO9deQ7Aro6tlHtjTU9ygq3eXhqRxa50zkmdUDN9naov7NjSzkwAZj7JYjm9Z9bi1gwQCGKLBw"
+}

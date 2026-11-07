@@ -1,0 +1,15 @@
+{
+  "description": "sha256:<hex>",
+  "expect": "params_hash",
+  "instance": {
+    "approval_id": "apr_01JC9Q40000000000000000001",
+    "decision_id": "dec_01JC9Q40000000000000000002",
+    "params_hash": "abc",
+    "approver": "owner:ops",
+    "method": "telegram_totp",
+    "approved_at": "2026-11-06T18:31:02Z",
+    "expires": "2026-11-06T18:46:02Z",
+    "comment": "ok for this week",
+    "signature": "ed25519:XnThZ0T25bJxNDP042mbhjPPSUDIHuQ3PxOZH4H8VkdrZVw1Od64gSKjfcNZe-L_l08Ze3wMM5f47NjQUexDDQ"
+  }
+}

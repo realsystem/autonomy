@@ -1,0 +1,2 @@
+{"ts": "2026-11-06T18:20:11Z", "level": "info", "component_id": "cell:field-station", "msg": "registry verified", "registry_hash": "sha256:d65bb6eab1a32b9bf54d57f583ffc00a663ee4601514ec96e8a4a9c4e2ec5864"}
+{"ts": "2026-11-06T18:20:11Z", "level": "warn", "component_id": "cell:field-station", "msg": "peer unreachable", "peer": "home-hub"}

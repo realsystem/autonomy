@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/health.schema.json",
+  "title": "Health",
+  "description": "Body of GET /v1/health (liveness), and data of health.reported events from components without an HTTP server (sent every 60 s; those include checks and config_hash).",
+  "type": "object",
+  "required": ["status", "component_id", "version"],
+  "properties": {
+    "status": {"$ref": "#/$defs/status"},
+    "component_id": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "uptime_s": {"$ref": "common.schema.json#/$defs/safe_int"},
+    "config_hash": {"$ref": "common.schema.json#/$defs/sha256"},
+    "checks": {"type": "array", "items": {"$ref": "#/$defs/check"}}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "degraded", "down"]
+    },
+    "check": {
+      "type": "object",
+      "required": ["name", "ok"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]*$", "maxLength": 64},
+        "ok": {"type": "boolean"},
+        "impact": {"description": "Mandatory on failed checks: what the owner loses, so degraded intelligence can be told from degraded safety.", "type": "string", "minLength": 1, "maxLength": 500},
+        "safety": {"description": "true when the failure affects a safety function rather than convenience or intelligence.", "type": "boolean"}
+      },
+      "additionalProperties": true,
+      "if": {"properties": {"ok": {"const": false}}},
+      "then": {"required": ["impact"]}
+    }
+  }
+}

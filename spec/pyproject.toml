@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autonomy-conformance"
+version = "0.1.0"
+description = "Autonomy contracts (C01): JSON Schemas, fixtures and the conformance CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary"}
+dependencies = [
+  "jsonschema>=4.18",
+  "referencing>=0.30",
+  "cryptography>=41",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+autonomy-conformance = "autonomy_conformance.cli:main"
+
+[tool.setuptools]
+packages = ["autonomy_conformance"]
+
+[tool.setuptools.package-data]
+# autonomy_conformance/schemas is a symlink to ../schemas so the wheel carries them.
+autonomy_conformance = ["schemas/v0/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

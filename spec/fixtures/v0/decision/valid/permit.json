@@ -1,0 +1,25 @@
+{
+  "decision_id": "dec_01JC9Q40000000000000000001",
+  "proposal_id": "prp_01JC9Q40000000000000000001",
+  "effect": "permit",
+  "matched": [
+    "grt_2026_11_farm_helpers",
+    "policy:farm/helpers.cedar#p3"
+  ],
+  "obligations": [
+    {
+      "type": "verify"
+    },
+    {
+      "type": "rate_limit",
+      "key": "agent:field-station:ha.helper.set",
+      "max_per_day": 4
+    }
+  ],
+  "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+  "decided_at": "2026-11-06T18:25:00Z",
+  "expires": "2026-11-06T18:40:00Z",
+  "policy_bundle": "2026.11.06-1",
+  "issuer": "svc:pdp@field-station",
+  "signature": "ed25519:XUlOjjPx5ugqHmUS8XKWMags4evmc_7Pof_204v-coJho-O5EhxiAUj3n0ZVptEhSyEQhZSfzbKZrgZ9W9tUCQ"
+}

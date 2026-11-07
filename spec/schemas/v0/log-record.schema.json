@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/log-record.schema.json",
+  "title": "Log record",
+  "description": "One JSON line written to stdout/stderr. Structured fields beyond these are allowed. No secrets; no raw LLM prompts at info level or above.",
+  "type": "object",
+  "required": ["ts", "level", "component_id", "msg"],
+  "properties": {
+    "ts": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "level": {"type": "string", "enum": ["debug", "info", "warn", "error"]},
+    "component_id": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "instance_id": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "msg": {"type": "string"},
+    "trace_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "span_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"}
+  },
+  "additionalProperties": true
+}

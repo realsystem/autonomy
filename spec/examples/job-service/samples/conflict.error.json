@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "conflict.idempotency_mismatch",
+    "message": "idempotency key reused with a different input",
+    "retryable": false,
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R"
+  }
+}

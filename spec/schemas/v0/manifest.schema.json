@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/manifest.schema.json",
+  "title": "Component manifest",
+  "description": "autonomy.manifest.json at the repository root, published with each release. The registry stores its hash. capabilities.requires is what the component can ask for, not what it is allowed; authority comes only from grants.",
+  "type": "object",
+  "required": ["component_id", "version", "kind", "description", "contracts", "capabilities", "trust_class", "runtime"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "component_id": {"$ref": "common.schema.json#/$defs/component_id", "description": "Without a cell qualifier; instances are <component_id>@<cell>."},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "kind": {"$ref": "common.schema.json#/$defs/component_kind"},
+    "description": {"type": "string", "minLength": 1, "maxLength": 500},
+    "repository": {"type": "string", "format": "uri"},
+    "contracts": {
+      "description": "Contract name → supported version range. Known names: envelope, health, error, logging, action-lifecycle, audit, job.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9-]*$"},
+      "additionalProperties": {"$ref": "common.schema.json#/$defs/version_range"}
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "provides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "version", "type"],
+            "properties": {
+              "name": {"$ref": "common.schema.json#/$defs/dotted_name"},
+              "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(?:\\.(0|[1-9][0-9]*)){0,2}$"},
+              "type": {"type": "string", "enum": ["event", "api", "job", "tool", "action"]},
+              "schema": {"type": "string", "minLength": 1, "description": "Path in the repository or URI of the payload schema."}
+            },
+            "additionalProperties": false
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": {"$ref": "common.schema.json#/$defs/dotted_name"},
+              "version": {"$ref": "common.schema.json#/$defs/version_range"},
+              "scope": {"type": "object", "description": "Capability-specific narrowing, e.g. entity patterns or a knowledge space."},
+              "privacy": {"$ref": "common.schema.json#/$defs/routing_privacy"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "proposes_actions": {
+          "type": "array",
+          "items": {"$ref": "common.schema.json#/$defs/action_type"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "trust_class": {
+      "description": "trusted-input: reads only trusted or owner inputs. untrusted-input: reads external content, so its outputs are untrusted.",
+      "type": "string",
+      "enum": ["trusted-input", "untrusted-input"]
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "owns": {
+          "description": "Stores no other component may access directly.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["store", "kind"],
+            "properties": {
+              "store": {"type": "string", "pattern": "^[a-z][a-z0-9+]*:.+$"},
+              "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "retention_days": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        },
+        "reads_from": {
+          "description": "Only events: and api: references. Reading another component's store directly is not allowed.",
+          "type": "array",
+          "items": {"type": "string", "pattern": "^(?:events|api):.+$"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["packaging"],
+      "properties": {
+        "packaging": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "e.g. ha-addon, docker, systemd, binary, python-package, cli, library."},
+          "uniqueItems": true
+        },
+        "health": {
+          "description": "HTTP paths. Omit for components without an HTTP server; they publish health.reported events instead.",
+          "type": "object",
+          "required": ["liveness", "readiness"],
+          "properties": {
+            "liveness": {"type": "string", "pattern": "^/"},
+            "readiness": {"type": "string", "pattern": "^/"}
+          },
+          "additionalProperties": false
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "memory_mb": {"type": "integer", "minimum": 1},
+            "cpu": {"type": "number", "exclusiveMinimum": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "description": "Components this one needs at runtime (instances allowed). Cycles are rejected when the registry is signed.",
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/component_ref"},
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {"if": {"properties": {"kind": {"const": "cell"}}}, "then": {"properties": {"component_id": {"pattern": "^cell:"}}}},
+    {"if": {"properties": {"kind": {"const": "svc"}}}, "then": {"properties": {"component_id": {"pattern": "^svc:"}}}},
+    {"if": {"properties": {"kind": {"const": "agent"}}}, "then": {"properties": {"component_id": {"pattern": "^agent:"}}}},
+    {"if": {"properties": {"kind": {"const": "adapter"}}}, "then": {"properties": {"component_id": {"pattern": "^adapter:"}}}},
+    {"if": {"properties": {"kind": {"const": "app"}}}, "then": {"properties": {"component_id": {"pattern": "^app:"}}}}
+  ]
+}

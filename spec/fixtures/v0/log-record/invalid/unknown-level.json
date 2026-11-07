@@ -1,0 +1,15 @@
+{
+  "description": "four levels",
+  "expect": "'trace' is not one of",
+  "instance": {
+    "ts": "2026-11-06T18:20:11Z",
+    "level": "trace",
+    "component_id": "svc:action-gateway",
+    "instance_id": "svc:action-gateway@field-station",
+    "msg": "action succeeded",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "span_id": "00f067aa0ba902b7",
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "action_id": "act_01JC9Q40000000000000000001"
+  }
+}

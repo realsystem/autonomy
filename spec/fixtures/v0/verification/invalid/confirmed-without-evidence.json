@@ -1,0 +1,14 @@
+{
+  "description": "confirmed needs observations",
+  "expect": "should be non-empty",
+  "instance": {
+    "verification_id": "ver_01JC9Q40000000000000000001",
+    "action_id": "act_01JC9Q40000000000000000001",
+    "result": "confirmed",
+    "observations": [],
+    "independent": false,
+    "verified_at": "2026-11-06T18:25:10Z",
+    "verifier": "svc:verifier@field-station",
+    "signature": "ed25519:51GIeYD4iJgfh-hZcx4jwZ3XqoXTGmow-yCZe8GiW38OgkZXbQ8P-4sw7yOnpErnPEiYa8Ot4lmxM_cKbxR4AA"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/approval.schema.json",
+  "title": "Approval",
+  "description": "The owner's signed consent to one decision with exactly these parameters, until expires. Closed: C06 acts on it.",
+  "type": "object",
+  "required": ["approval_id", "decision_id", "params_hash", "approver", "method", "approved_at", "expires", "signature"],
+  "properties": {
+    "approval_id": {"$ref": "common.schema.json#/$defs/approval_id"},
+    "decision_id": {"$ref": "common.schema.json#/$defs/decision_id"},
+    "params_hash": {"$ref": "common.schema.json#/$defs/sha256", "description": "Must equal the decision's params_hash."},
+    "approver": {"$ref": "common.schema.json#/$defs/owner_id"},
+    "method": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "e.g. telegram_totp, console, cli."},
+    "approved_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "expires": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "comment": {"type": "string", "maxLength": 1000},
+    "signature": {"$ref": "common.schema.json#/$defs/signature"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/grant.schema.json",
+  "title": "Grant",
+  "description": "Owner-signed authority for a grantee to perform listed actions on listed resources within constraints. Closed: an unknown constraint fails validation instead of being silently ignored by a PDP that does not understand it.",
+  "type": "object",
+  "required": ["grant_id", "grantee", "responsibility", "autonomy_level", "actions", "resources", "constraints", "requires_verification", "valid_from", "expires", "issued_by", "signature"],
+  "properties": {
+    "grant_id": {"$ref": "common.schema.json#/$defs/grant_id"},
+    "grantee": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "responsibility": {"$ref": "common.schema.json#/$defs/dotted_name"},
+    "autonomy_level": {"$ref": "common.schema.json#/$defs/autonomy_level"},
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "common.schema.json#/$defs/action_type"},
+      "uniqueItems": true
+    },
+    "resources": {
+      "description": "Resource selectors by kind, e.g. {\"entities\": [...]}. Each value is a non-empty list of exact names or patterns ending in *.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "max_per_day": {"type": "integer", "minimum": 0},
+        "max_per_hour": {"type": "integer", "minimum": 0},
+        "value_range": {
+          "type": "object",
+          "required": ["min", "max"],
+          "properties": {"min": {"type": "number"}, "max": {"type": "number"}},
+          "additionalProperties": false
+        },
+        "cells": {"type": "array", "minItems": 1, "items": {"$ref": "common.schema.json#/$defs/cell"}, "uniqueItems": true},
+        "power_stage_min": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$"},
+        "max_risk_class": {"$ref": "common.schema.json#/$defs/risk_class"}
+      },
+      "additionalProperties": false,
+      "not": {"properties": {"max_risk_class": {"const": "R3"}}, "required": ["max_risk_class"]}
+    },
+    "requires_verification": {"type": "boolean"},
+    "valid_from": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "expires": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "issued_by": {"$ref": "common.schema.json#/$defs/owner_id"},
+    "comment": {"type": "string", "maxLength": 500},
+    "signature": {"$ref": "common.schema.json#/$defs/signature"}
+  },
+  "additionalProperties": false
+}

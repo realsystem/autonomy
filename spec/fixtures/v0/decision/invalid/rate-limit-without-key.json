@@ -1,0 +1,28 @@
+{
+  "description": "rate limits need a key",
+  "expect": "'key' is a required property",
+  "instance": {
+    "decision_id": "dec_01JC9Q40000000000000000001",
+    "proposal_id": "prp_01JC9Q40000000000000000001",
+    "effect": "permit",
+    "matched": [
+      "grt_2026_11_farm_helpers",
+      "policy:farm/helpers.cedar#p3"
+    ],
+    "obligations": [
+      {
+        "type": "verify"
+      },
+      {
+        "type": "rate_limit",
+        "max_per_day": 4
+      }
+    ],
+    "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+    "decided_at": "2026-11-06T18:25:00Z",
+    "expires": "2026-11-06T18:40:00Z",
+    "policy_bundle": "2026.11.06-1",
+    "issuer": "svc:pdp@field-station",
+    "signature": "ed25519:-x3CqWBa4l_m8vZBcfoNEuAt4Ub7lcCDnwFa4aa__N0lU_Unn4FhmXolbR9M0A_iCyPqiy8aMOttRJ2tjB3ICg"
+  }
+}

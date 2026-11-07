@@ -1,0 +1,15 @@
+{
+  "status": "degraded",
+  "checks": [
+    {
+      "name": "sqlite",
+      "ok": true
+    },
+    {
+      "name": "model-gateway",
+      "ok": false,
+      "impact": "recommendations paused"
+    }
+  ],
+  "config_hash": "sha256:6cb511c4d6c7966c05745c31e74401ad0c885fddf0f2bd2b859825fc9f1d7072"
+}

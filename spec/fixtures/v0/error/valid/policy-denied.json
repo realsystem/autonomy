@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "policy.requires_approval",
+    "message": "Action ha.service.call on switch.pump requires approval",
+    "retryable": false,
+    "details": {
+      "decision_id": "dec_01JC9Q40000000000000000002",
+      "obligations": [
+        "approval:owner"
+      ]
+    },
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R"
+  }
+}

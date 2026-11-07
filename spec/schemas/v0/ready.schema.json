@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/ready.schema.json",
+  "title": "Readiness",
+  "description": "Body of GET /v1/ready. HTTP 200 when status is ok; 503 otherwise.",
+  "type": "object",
+  "required": ["status", "checks", "config_hash"],
+  "properties": {
+    "status": {"$ref": "health.schema.json#/$defs/status"},
+    "component_id": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "checks": {"type": "array", "items": {"$ref": "health.schema.json#/$defs/check"}},
+    "config_hash": {"$ref": "common.schema.json#/$defs/sha256", "description": "Hash of the effective configuration (§11)."}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,9 @@
+{
+  "input": [
+    "\u0000\b\t\n\f\r\u001f",
+    "quote \" backslash \\ slash /",
+    " del",
+    "café   😀"
+  ],
+  "canonical": "[\"\\u0000\\b\\t\\n\\f\\r\\u001f\",\"quote \\\" backslash \\\\ slash /\",\" del\",\"café   😀\"]"
+}

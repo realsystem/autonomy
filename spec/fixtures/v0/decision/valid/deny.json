@@ -1,0 +1,17 @@
+{
+  "decision_id": "dec_01JC9Q40000000000000000002",
+  "proposal_id": "prp_01JC9Q40000000000000000001",
+  "effect": "deny",
+  "matched": [
+    "grt_2026_11_farm_helpers",
+    "policy:farm/helpers.cedar#p3"
+  ],
+  "obligations": [],
+  "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+  "decided_at": "2026-11-06T18:25:00Z",
+  "expires": "2026-11-06T18:40:00Z",
+  "policy_bundle": "2026.11.06-1",
+  "issuer": "svc:pdp@field-station",
+  "reason": "no grant covers this resource",
+  "signature": "ed25519:jiwst-f2_DiNPDVjKTaK6C9mI1MKRZIUIwnjGbvYqpqiK0VCGruoLidxer-mXrSQbOvo2OFVRwdGiLDlmhdnDg"
+}

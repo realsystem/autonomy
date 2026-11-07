@@ -1,0 +1,29 @@
+{
+  "description": "require_approval carries an approval obligation",
+  "expect": "obligations",
+  "instance": {
+    "decision_id": "dec_01JC9Q40000000000000000001",
+    "proposal_id": "prp_01JC9Q40000000000000000001",
+    "effect": "require_approval",
+    "matched": [
+      "grt_2026_11_farm_helpers",
+      "policy:farm/helpers.cedar#p3"
+    ],
+    "obligations": [
+      {
+        "type": "verify"
+      },
+      {
+        "type": "rate_limit",
+        "key": "agent:field-station:ha.helper.set",
+        "max_per_day": 4
+      }
+    ],
+    "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+    "decided_at": "2026-11-06T18:25:00Z",
+    "expires": "2026-11-06T18:40:00Z",
+    "policy_bundle": "2026.11.06-1",
+    "issuer": "svc:pdp@field-station",
+    "signature": "ed25519:iUnwzWTL4ad1RY9ty_ysmh35_PAXgHSRmkhX-M9CnzHfNqVI3S31SvBxf02iCiguH-VjwwuKPYplx0Ugy7HnDg"
+  }
+}

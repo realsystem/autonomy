@@ -1,0 +1,17 @@
+{
+  "verification_id": "ver_01JC9Q40000000000000000001",
+  "action_id": "act_01JC9Q40000000000000000001",
+  "result": "confirmed",
+  "observations": [
+    {
+      "ref": "evt:01JC9Q3W8M2X7ZK4T5R6Y80009",
+      "value": 118,
+      "observed_at": "2026-11-06T18:25:09Z",
+      "path": "ha.state"
+    }
+  ],
+  "independent": false,
+  "verified_at": "2026-11-06T18:25:10Z",
+  "verifier": "svc:verifier@field-station",
+  "signature": "ed25519:i0XGf_VbFEn4J2DuRMYsT0MZbpu7JU3N4Df6Vlc2fKmQkc9LYS1GkZFOgB4S_NUHrspKlXr96yxRdcyliYA9Aw"
+}

@@ -1,6 +1,6 @@
 # Component Contracts
 
-**Status:** Draft 0.1 (target: `autonomy/spec` v0.1) · 2026-11-06
+**Status:** Draft 0.1 · 2026-11-06 · Implemented as [`spec/`](../spec/README.md) v0.1.0 (M1). The schemas there are authoritative; [spec decisions](../spec/README.md#decisions-made-in-v01-where-the-design-was-open) record where v0.1 settled points this document left open.
 
 This is the most important document in the package. A component joins Autonomy by implementing these contracts, not by being modified into a central program. Everything here is **[D]** unless tagged.
 
@@ -19,8 +19,8 @@ A conformance kit in `autonomy/spec` provides JSON Schemas, fixtures and a CLI (
 
 | Item | Rule |
 |---|---|
-| `component_id` | `<kind>:<name>` where kind ∈ `cell`, `svc`, `agent`, `adapter`, `app`, `owner`; name = lowercase letters, digits, hyphens (same rule as `edge_server` node names [V]). Examples: `cell:field-station`, `svc:job-service`, `agent:field-station`, `adapter:ha@field-station` |
-| Instance | `instance_id` = `<component_id>#<cell>` when the same component runs on several cells |
+| `component_id` | `<kind>:<name>` where kind ∈ `cell`, `svc`, `agent`, `adapter`, `app`, `owner`; name = lowercase letters, digits, hyphens (same rule as `edge_server` node names [V]). Examples: `cell:field-station`, `svc:job-service`, `agent:field-station`, `adapter:ha` |
+| Instance | `<component_id>@<cell>` when the same component runs on several cells, e.g. `adapter:ha@field-station`, `svc:pdp@field-station`. Manifests use the bare `component_id` |
 | Key | Ed25519 key pair generated where the component runs; private key never leaves the host. Public key in the registry as `ed25519:<base64url>` |
 | Owner | `owner:root` (offline, signs registry roots and root-level grants) and `owner:ops` (online, signs day-to-day approvals and grants up to limits set by root) |
 | Rotation | New key registered with `previous_key` signature; old key valid for overlap window (default 7 days) |
@@ -114,7 +114,7 @@ Every message crossing a component boundary — events, commands, action request
 | `principal` | yes | Identity on whose behalf this is sent (usually = source; for delegated work, the delegating agent) |
 | `trust` | yes | `trusted` (from a registered component about its own domain) · `owner` (owner-originated) · `untrusted` (derived from external content: web, email, third-party messages, transcripts) |
 | `privacy` | yes | `public` · `site` · `private` · `secret-adjacent`; drives routing in C12 and sync filters in C09 |
-| `autonomysig` | yes | Ed25519 signature over the RFC 8785 canonical JSON of all other attributes including `data` |
+| `autonomysig` | yes | Ed25519 signature over the RFC 8785 canonical JSON of all other attributes including `data` (exact rules and vectors: [spec](../spec/README.md#signatures-and-hashes)) |
 
 **Taint propagation.** If any input used to produce `data` was `untrusted`, the output's `trust` is `untrusted`. Components that cannot track this mark everything they emit after reading untrusted input as `untrusted` for the rest of that task (the conservative choice, following the dual-LLM/CaMeL reasoning [R]).
 
@@ -124,7 +124,7 @@ Receivers verify: signature against registry key, `source` registered and not re
 
 ```http
 GET /v1/health   →  200 {"status":"ok","component_id":"svc:job-service","version":"1.4.0","uptime_s":86400}
-GET /v1/ready    →  200 | 503 {"status":"degraded","checks":[{"name":"sqlite","ok":true},{"name":"model-gateway","ok":false,"impact":"recommendations paused"}]}
+GET /v1/ready    →  200 | 503 {"status":"degraded","checks":[{"name":"sqlite","ok":true},{"name":"model-gateway","ok":false,"impact":"recommendations paused"}],"config_hash":"sha256:…"}
 GET /v1/cell     →  (C10 only) {"cell":"field-station","registry_hash":"sha256:…","policy_bundle":"2026.11.06-1","power_stage":"normal","peers":[…]}
 ```
 
@@ -143,7 +143,7 @@ GET /v1/cell     →  (C10 only) {"cell":"field-station","registry_hash":"sha256
 | `job.*` | `job.queued` … `job.dead_lettered` | C07 |
 | `authority.*` | `authority.granted`, `authority.revoked`, `system.suspended`, `system.resumed` | C05, C03 |
 | `incident.*` | `incident.opened`, `incident.updated`, `incident.closed` | C10, A02 |
-| `health.*` | `health.reported`, `heartbeat` | All |
+| `health.*` | `health.reported`, `health.heartbeat` | All |
 
 Event schemas are versioned independently. Consumers must ignore unknown fields (forward compatibility).
 
@@ -250,7 +250,7 @@ Event schemas are versioned independently. Consumers must ignore unknown fields 
  "policy_bundle": "2026.11.06-1", "issuer": "svc:pdp@field-station", "signature": "ed25519:…"}
 ```
 
-`effect` ∈ `permit`, `deny`, `require_approval`. `params_hash` binds the decision to the exact parameters.
+`effect` ∈ `permit`, `deny`, `require_approval`. `params_hash` = sha256 of the canonical `proposal.action` (`type`, `target`, `params`), binding the decision to the exact parameters.
 
 ### 8.6 Approval (C05)
 
@@ -292,7 +292,7 @@ Event schemas are versioned independently. Consumers must ignore unknown fields 
  "summary": "Set recommended climate factor 104 → 118", "signature": "ed25519:…"}
 ```
 
-`hash = sha256(prev_hash || canonical(record without hash, signature))`. Chains are per cell; the archive cell stores copies and verifies continuity.
+`hash = sha256(prev_hash || canonical(record without hash, signature))`; the genesis record and byte-level rules are in [spec](../spec/README.md#signatures-and-hashes). Chains are per cell; the archive cell stores copies and verifies continuity.
 
 ## 10. Job contract (C07, extends `processor` [V])
 

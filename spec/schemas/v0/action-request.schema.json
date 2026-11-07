@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/action-request.schema.json",
+  "title": "ActionRequest",
+  "description": "Everything C06 needs to execute, which it re-verifies: the proposal, the decision bound to it and, when the decision requires it, the owner's approval.",
+  "type": "object",
+  "required": ["action_id", "proposal", "decision", "idempotency_key"],
+  "properties": {
+    "action_id": {"$ref": "common.schema.json#/$defs/action_id"},
+    "proposal": {"$ref": "action-proposal.schema.json"},
+    "decision": {"$ref": "decision.schema.json"},
+    "approval": {"$ref": "approval.schema.json"},
+    "idempotency_key": {"$ref": "common.schema.json#/$defs/idempotency_key", "description": "Must equal proposal.idempotency_key."}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "Only permit or require_approval decisions can be executed.",
+      "properties": {"decision": {"properties": {"effect": {"enum": ["permit", "require_approval"]}}}}
+    },
+    {
+      "description": "require_approval decisions need an approval.",
+      "if": {"properties": {"decision": {"properties": {"effect": {"const": "require_approval"}}}}},
+      "then": {"required": ["approval"]}
+    }
+  ]
+}

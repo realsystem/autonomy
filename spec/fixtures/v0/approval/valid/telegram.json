@@ -1,0 +1,11 @@
+{
+  "approval_id": "apr_01JC9Q40000000000000000001",
+  "decision_id": "dec_01JC9Q40000000000000000002",
+  "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+  "approver": "owner:ops",
+  "method": "telegram_totp",
+  "approved_at": "2026-11-06T18:31:02Z",
+  "expires": "2026-11-06T18:46:02Z",
+  "comment": "ok for this week",
+  "signature": "ed25519:SSEy3Ti9CneZTc3UzEVBge4pvAiyWY_sEj1GCpeCUg8m9Zx8hEZzQXiWJkqa0_mFpuy6b6YCE9XJRF14ORikBg"
+}

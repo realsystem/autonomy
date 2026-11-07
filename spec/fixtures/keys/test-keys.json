@@ -1,0 +1,27 @@
+{
+  "_warning": "PUBLIC TEST KEYS derived from sha256('autonomy-test-key:' + name). Never trust them outside tests.",
+  "public": {
+    "owner:root": "ed25519:rJu6Ds4dzbYLuIlqbeUarZ4oyyKqxLWcW450zg4Arg4",
+    "owner:ops": "ed25519:rS59uDpD57fOra4899EXOPFJT3YHih2aMHP58HCik5M",
+    "cell:field-station": "ed25519:O1oYsIk31etqz-XTIIMWKWj1N8sDuEtA9_oZ-cLsres",
+    "agent:field-station": "ed25519:L7qRi8K_zt4aGSvZAz50TLYJuYOtMqhVJt06eByWPXc",
+    "adapter:ha": "ed25519:tlzvhdZQ7tiZV4PR-XCldZwowxHrSGkeNFFDYG-x-9s",
+    "svc:evaluator": "ed25519:HH4-3JNzofk3YUlY31NPe4k9ZkfEY12F5XSSSFBWoPc",
+    "svc:pdp": "ed25519:oT-kFoAeqv4vjQ-KCFadSgbjSx2C0KYdFcVgKvCpCQs",
+    "svc:action-gateway": "ed25519:b-w21ZCAXFEqxx3Qe_grVwMazkB0nDkUUjhbF9AynhM",
+    "svc:verifier": "ed25519:SYMjaGFTxYiKWRnH17MpO0wWsnoIhPUtMyHHWN3FoJc",
+    "svc:job-service": "ed25519:cbcbYbkHgMqEjsDVQN0IxJWUQXemjIVEMGNV-8g7FDY"
+  },
+  "private_seed_hex": {
+    "owner:root": "bd7ee917ad9e8c8565761aa7bca21c6f4e19a43450324e1700996910ad7f47bd",
+    "owner:ops": "0dc7d158b3ee10c581ce2b5b5bf3a4dee69451c8de4c1d3189503c466e2b454b",
+    "cell:field-station": "18b3d40889de66e9418f215ca47bbe01a2c164f13419b16a0dcf80f81101ea5d",
+    "agent:field-station": "fa0f4ac8455ba5d7443b840e63f42e7f71db32aa45d0af618a56c92c485ce5ef",
+    "adapter:ha": "8eefc7dc47be352beb9f8388a96b8e36f3c01eb3497cfd9a0986b4eba3f820c5",
+    "svc:evaluator": "ac1494a0caca5d3bf1ffd7040689d3800668361ebaef5abec8b46cd012f6f494",
+    "svc:pdp": "318d2d5babb85aeb1e57db4dbcecc94fcfc5c42add60a96e4af6816682bf399f",
+    "svc:action-gateway": "32dc8d5eaf529399fecdaf581189218d2d1b36fb7a3a1df9a55e84389fa03ceb",
+    "svc:verifier": "dd60c6089cf7f17a163c04790f83434f6773c71d844d4d08cf48f88f57264060",
+    "svc:job-service": "32adc09ccdb5a2e55e7301658f0b5e27d73dd1d278f4dd35ffb88f591e46f034"
+  }
+}

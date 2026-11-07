@@ -1,0 +1,56 @@
+{
+  "$schema": "https://autonomy.local/spec/v0/manifest.schema.json",
+  "component_id": "cell:field-station",
+  "version": "0.1.0",
+  "kind": "cell",
+  "description": "Cell runtime for the Field Station (edge_server, ha-addon packaging): identity, registry copy, outbox, heartbeats, power stages.",
+  "repository": "https://github.com/realsystem/edge_server",
+  "contracts": {
+    "envelope": "^0.1",
+    "health": "^0.1",
+    "error": "^0.1",
+    "logging": "^0.1"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "cell.status",
+        "version": "1.0",
+        "type": "api"
+      },
+      {
+        "name": "health.heartbeat",
+        "version": "1.0",
+        "type": "event"
+      }
+    ]
+  },
+  "trust_class": "trusted-input",
+  "data": {
+    "owns": [
+      {
+        "store": "sqlite:/data/outbox.db",
+        "kind": "outbox",
+        "retention_days": 30
+      },
+      {
+        "store": "file:/data/registry",
+        "kind": "registry_copy"
+      }
+    ]
+  },
+  "runtime": {
+    "packaging": [
+      "ha-addon"
+    ],
+    "health": {
+      "liveness": "/v1/health",
+      "readiness": "/v1/ready"
+    },
+    "resources": {
+      "memory_mb": 96,
+      "cpu": 0.25
+    }
+  },
+  "dependencies": []
+}

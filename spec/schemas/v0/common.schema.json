@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/common.schema.json",
+  "title": "Autonomy common definitions",
+  "description": "Shared building blocks referenced by every other v0 schema. Not a message on its own.",
+  "$defs": {
+    "name": {
+      "description": "Lowercase letters, digits and single hyphens (same rule as edge_server node names).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 63
+    },
+    "cell": {
+      "description": "Cell name, e.g. field-station.",
+      "$ref": "#/$defs/name"
+    },
+    "component_kind": {
+      "type": "string",
+      "enum": ["cell", "svc", "agent", "adapter", "app"]
+    },
+    "component_id": {
+      "description": "<kind>:<name>. Identifies a component independent of where it runs, e.g. agent:field-station, adapter:ha.",
+      "type": "string",
+      "pattern": "^(?:cell|svc|agent|adapter|app):[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "owner_id": {
+      "description": "owner:root signs registry roots and root-level grants; owner:ops signs day-to-day approvals and grants within limits set by root.",
+      "type": "string",
+      "enum": ["owner:root", "owner:ops"]
+    },
+    "component_ref": {
+      "description": "A component, optionally qualified by the cell it runs on: <kind>:<name>[@<cell>], e.g. svc:action-gateway@field-station. Owner identities are also valid references.",
+      "type": "string",
+      "pattern": "^(?:(?:cell|svc|agent|adapter|app):[a-z0-9]+(?:-[a-z0-9]+)*(?:@[a-z0-9]+(?:-[a-z0-9]+)*)?|owner:(?:root|ops))$",
+      "maxLength": 192
+    },
+    "ulid": {
+      "description": "ULID in Crockford base32 (26 characters, no I, L, O, U).",
+      "type": "string",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "timestamp": {
+      "description": "RFC 3339 date-time in UTC with a Z suffix; fractional seconds optional.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?Z$"
+    },
+    "signature": {
+      "description": "ed25519:<base64url, unpadded> of a 64-byte Ed25519 signature over the RFC 8785 canonical JSON of the object without its signature field. See spec/README.md#signatures-and-hashes.",
+      "type": "string",
+      "pattern": "^ed25519:[A-Za-z0-9_-]{86}$"
+    },
+    "public_key": {
+      "description": "ed25519:<base64url, unpadded> of a 32-byte Ed25519 public key.",
+      "type": "string",
+      "pattern": "^ed25519:[A-Za-z0-9_-]{43}$"
+    },
+    "sha256": {
+      "description": "sha256:<64 lowercase hex characters>.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "trust": {
+      "description": "trusted: from a registered component about its own domain. owner: owner-originated. untrusted: derived from external content (web, email, third-party messages, transcripts).",
+      "type": "string",
+      "enum": ["trusted", "owner", "untrusted"]
+    },
+    "privacy": {
+      "description": "Data classification. Drives model routing (C12) and sync filters (C09).",
+      "type": "string",
+      "enum": ["public", "site", "private", "secret-adjacent"]
+    },
+    "routing_privacy": {
+      "description": "Where processing may happen. local_only: never leaves the originating cell. cloud_ok: may use cloud providers or remote workers.",
+      "type": "string",
+      "enum": ["local_only", "cloud_ok"]
+    },
+    "risk_class": {
+      "description": "R0 observe · R1 reversible-local · R2 consequential · R3 never-remote.",
+      "type": "string",
+      "enum": ["R0", "R1", "R2", "R3"]
+    },
+    "autonomy_level": {
+      "type": "string",
+      "enum": ["A0", "A1", "A2", "A3", "A4", "A5"]
+    },
+    "traceparent": {
+      "description": "W3C Trace Context traceparent, version 00.",
+      "type": "string",
+      "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$"
+    },
+    "correlationid": {
+      "description": "Ties everything belonging to one objective, incident or action story.",
+      "type": "string",
+      "pattern": "^corr_[A-Za-z0-9_-]{1,64}$"
+    },
+    "dotted_name": {
+      "description": "Lowercase dotted identifier with at least two segments, e.g. ha.helper.set, observation.ha.state_changed.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 128
+    },
+    "action_type": {
+      "$ref": "#/$defs/dotted_name"
+    },
+    "event_type": {
+      "$ref": "#/$defs/dotted_name"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "version_range": {
+      "description": "^X[.Y[.Z]] (same MAJOR, at least the given version — also for MAJOR 0), ~X.Y[.Z] (same MAJOR.MINOR), or an exact X[.Y[.Z]].",
+      "type": "string",
+      "pattern": "^[\\^~]?(0|[1-9][0-9]*)(?:\\.(0|[1-9][0-9]*)){0,2}$"
+    },
+    "ref": {
+      "description": "Reference to evidence or another record: <scheme>:<id>, e.g. evt:01JC9Q3W..., fact:et0_daily_2026-11-06.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*:.+$",
+      "maxLength": 512
+    },
+    "proposal_id": {"type": "string", "pattern": "^prp_[A-Za-z0-9_-]{1,64}$"},
+    "evaluation_id": {"type": "string", "pattern": "^evl_[A-Za-z0-9_-]{1,64}$"},
+    "decision_id": {"type": "string", "pattern": "^dec_[A-Za-z0-9_-]{1,64}$"},
+    "approval_id": {"type": "string", "pattern": "^apr_[A-Za-z0-9_-]{1,64}$"},
+    "action_id": {"type": "string", "pattern": "^act_[A-Za-z0-9_-]{1,64}$"},
+    "verification_id": {"type": "string", "pattern": "^ver_[A-Za-z0-9_-]{1,64}$"},
+    "grant_id": {"type": "string", "pattern": "^grt_[A-Za-z0-9_-]{1,64}$"},
+    "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9_-]{1,64}$"},
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[\\x21-\\x7e]+$"
+    },
+    "safe_int": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  }
+}

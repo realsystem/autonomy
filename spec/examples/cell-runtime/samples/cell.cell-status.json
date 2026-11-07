@@ -1,0 +1,15 @@
+{
+  "cell": "field-station",
+  "registry_hash": "sha256:d65bb6eab1a32b9bf54d57f583ffc00a663ee4601514ec96e8a4a9c4e2ec5864",
+  "policy_bundle": "2026.11.06-1",
+  "power_stage": "normal",
+  "suspended": false,
+  "peers": [
+    {
+      "cell": "home-hub",
+      "reachable": true,
+      "last_seen_at": "2026-11-06T18:19:40Z",
+      "registry_hash": "sha256:d65bb6eab1a32b9bf54d57f583ffc00a663ee4601514ec96e8a4a9c4e2ec5864"
+    }
+  ]
+}

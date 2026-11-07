@@ -7,7 +7,7 @@ A modular, distributed system that progressively takes over ongoing responsibili
 | Path | What |
 |---|---|
 | [`design/`](design/README.md) | Design package (draft 0.1): architecture, component catalog, **component contracts**, governance, roadmap, ADRs, diagrams |
-| `spec/` | *(next: milestone M1)* Versioned JSON Schemas and the conformance kit (component C01) |
+| [`spec/`](spec/README.md) | Contracts v0.1.0 (milestone M1, component C01): JSON Schemas, fixtures, vectors and the `autonomy-conformance` CLI |
 
 ## Start here
 

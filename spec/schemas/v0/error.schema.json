@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/error.schema.json",
+  "title": "Error response",
+  "description": "Body of every error returned across a component boundary.",
+  "type": "object",
+  "required": ["error"],
+  "properties": {
+    "error": {"$ref": "#/$defs/error_body"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "error_body": {
+      "type": "object",
+      "required": ["code", "message", "retryable"],
+      "properties": {
+        "code": {
+          "description": "<family>.<reason>. validation and policy errors are never retryable as-is; conflict maybe; unavailable with backoff; internal limited.",
+          "type": "string",
+          "pattern": "^(?:validation|policy|conflict|unavailable|internal)\\.[a-z][a-z0-9_]*$"
+        },
+        "message": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "retryable": {"type": "boolean"},
+        "details": {"type": "object"},
+        "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"}
+      },
+      "additionalProperties": false,
+      "if": {"properties": {"code": {"pattern": "^(?:validation|policy)\\."}}},
+      "then": {"properties": {"retryable": {"const": false}}}
+    }
+  }
+}
