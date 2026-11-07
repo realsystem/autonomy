@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> accepted: signatures, decision, approval, idempotency ok
+  [*] --> rejected: any check fails
+  accepted --> started: rate limit, breaker, power gate, access-path check ok
+  accepted --> cancelled: revocation / suspend / expiry before start
+  started --> succeeded: adapter ok
+  started --> failed: adapter error
+  started --> unknown: crash or timeout during call
+  unknown --> succeeded: reconciliation reads state
+  unknown --> failed: reconciliation reads state
+  succeeded --> verified: C14 confirmed
+  succeeded --> contradicted: C14 contradicted
+  succeeded --> unverified: C14 not_confirmed / inconclusive

@@ -1,0 +1,21 @@
+# Autonomy
+
+A modular, distributed system that progressively takes over ongoing responsibilities — observing, planning, deciding within owner-granted authority, acting, verifying and recovering — while the owner keeps control of goals, permissions, data and shutdown. *Autonomy* is a temporary name.
+
+## Contents
+
+| Path | What |
+|---|---|
+| [`design/`](design/README.md) | Design package (draft 0.1): architecture, component catalog, **component contracts**, governance, roadmap, ADRs, diagrams |
+| `spec/` | *(next: milestone M1)* Versioned JSON Schemas and the conformance kit (component C01) |
+
+## Start here
+
+- [design/README.md](design/README.md) — overview, building blocks, development order
+- [design/component-contracts.md](design/component-contracts.md) — the contract every component implements
+- [design/development-roadmap.md](design/development-roadmap.md) — milestones M0–M23
+
+## Related repositories
+
+- [`farm_automation`](https://github.com/realsystem/farm_automation) — Field Station monitoring and irrigation design; the first reference deployment
+- [`edge_server`](https://github.com/realsystem/edge_server), [`processor`](https://github.com/realsystem/processor), [`jarvis`](https://github.com/realsystem/jarvis), [`farm_agent`](https://github.com/realsystem/farm_agent) — existing projects that become platform components (see [repository-mapping](design/repository-mapping.md))

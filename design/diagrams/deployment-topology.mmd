@@ -1,0 +1,34 @@
+flowchart TB
+  subgraph Internet
+    TG[Telegram]; LLM[Cloud LLM providers]; GH[GitHub releases]
+  end
+  subgraph VPS["Cell: vps (Ubuntu VPS, 1 GB)"]
+    JS["C07 Job Service control plane<br/>(processor, SQLite)"]
+    CRV["C10 Cell Runtime"]
+  end
+  subgraph HOME["Cell: home-hub (home server / PC)"]
+    CRH["C10 Cell Runtime + C06"]
+    OC["C21 Owner Console"]
+    KS["C15 Knowledge"]
+    AH["C11 Agent Host (A02, A03)"]
+    W1["C07 worker (GPU, Ollama)"]
+  end
+  subgraph FARM["Cell: field-station (Raspberry Pi 5, HA OS)"]
+    HA["Home Assistant OS"]
+    CRF["C10 Cell Runtime as HA add-on<br/>+ C06 + C20 HA adapter"]
+    A01["A01 Field Station Agent (add-on)"]
+    OSP["OpenSprinkler / RPS / floats<br/>(hardware safety, unchanged)"]
+  end
+  subgraph EDGE["Cell: edge-nvr (edge_server host, optional)"]
+    CRE["C10 Cell Runtime + Frigate + power plugins"]
+  end
+  CRF <-- "Tailscale: signed envelopes" --> CRH
+  CRE <-- "Tailscale" --> CRH
+  CRH <-- "Tailscale / HTTPS" --> JS
+  W1 -- "poll (outbound)" --> JS
+  CRF -- "Telegram (approvals, alerts)" --> TG
+  CRH --> TG
+  AH --> LLM
+  A01 -- "via C12 policy routing" --> LLM
+  HA --- OSP
+  CRF --- HA

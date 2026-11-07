@@ -1,0 +1,43 @@
+flowchart TB
+  subgraph HUMAN["Human Control"]
+    OWN["Owner<br/>(root key, operational key)"]
+    C21["C21 Human Interfaces<br/>Owner Console · Telegram · Voice (jarvis)"]
+    C05["C05 Approval & Owner Control<br/>approvals · revocation · e-stop"]
+  end
+  subgraph INTEL["Intelligence"]
+    C11["C11 Agent Host"]
+    AG["Agents A01–A03<br/>(planner, field station, doctor, research)"]
+    C12["C12 Model Gateway"]
+  end
+  subgraph GOV["Governance"]
+    C04["C04 Policy & Authority<br/>PDP · grants · autonomy levels"]
+    C13["C13 Evaluator"]
+  end
+  subgraph EXEC["Execution"]
+    C06["C06 Action Gateway<br/>(sole executor of consequential actions)"]
+    C07["C07 Job Service"]
+    C08["C08 Workflow Coordinator"]
+    C14["C14 Verifier"]
+  end
+  subgraph WORLD["World Interfaces"]
+    C20["C20 World Adapters<br/>Home Assistant · Frigate · power · web · email · files"]
+  end
+  subgraph XCUT["Cross-cutting (libraries + per-cell services)"]
+    C01["C01 Contracts"]; C02["C02 Core Library"]; C03["C03 Identity & Registry"]
+    C09["C09 Event Log & Messaging"]; C15["C15 Knowledge"]; C16["C16 Audit Ledger"]
+    C17["C17 Observability"]; C18["C18 Secrets"]; C19["C19 Backup & Recovery"]; C10["C10 Cell Runtime"]
+  end
+  OWN --> C21 --> C05
+  C05 -- "signed grants & approvals" --> C04
+  AG --- C11 --> C12
+  AG -- "ActionProposal" --> C13 -- "Evaluation" --> C04
+  C04 -- "signed Decision" --> C06
+  C05 -- "signed Approval" --> C06
+  C06 --> C20
+  C06 -- "ExecutionRecord" --> C14
+  C20 -- "observations" --> C14
+  C14 -- "Verification" --> C16
+  AG -- "jobs" --> C07 --> C08
+  C07 -- "job actions" --> C13
+  C20 -- "observations (events)" --> C09 --> AG
+  AG <--> C15

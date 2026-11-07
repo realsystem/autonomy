@@ -1,0 +1,17 @@
+flowchart LR
+  OWNER(["Owner"])
+  subgraph AUT["Autonomy (federation of cells)"]
+    CORE["Human control · Intelligence · Governance · Execution · World interfaces"]
+  end
+  OWNER -- "goals, grants, approvals, stop" --> AUT
+  AUT -- "assessments, alerts, approval requests, reports" --> OWNER
+  AUT <-- "observe / act (scoped)" --> HA["Home Assistant<br/>(Field Station)"]
+  HA --- HW["Farm hardware safety<br/>(independent)"]
+  AUT <-- "observe" --> PWR["Power: Victron, ECO-WORTHY"]
+  AUT <-- "observe" --> CAM["Cameras / Frigate"]
+  AUT <-- "messages" --> TG["Telegram"]
+  AUT -- "inference (routed)" --> LLM["Cloud LLMs"]
+  AUT -- "inference" --> LOC["Local models (Ollama)"]
+  AUT -- "read (untrusted)" --> WEB["Web, YouTube, email"]
+  APPS["Independent applications<br/>leadgen · wildwatch · gardening · finance · media"] -- "optional services: jobs, models, notifications" --> AUT
+  AUT --> GH["GitHub (code, signed releases)"]

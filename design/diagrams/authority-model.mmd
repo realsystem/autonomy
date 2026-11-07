@@ -1,0 +1,14 @@
+flowchart LR
+  P["Proposal"] --> CAN{"Can?<br/>capability in registry<br/>adapter supports action"}
+  CAN -- no --> X1["reject: validation.capability"]
+  CAN -- yes --> SHOULD{"Should?<br/>C13: fresh inputs, invariants,<br/>conflicts, dry-run, LLM critique"}
+  SHOULD -- reject --> X2["reject + reason"]
+  SHOULD -- ok / escalate --> MAY{"May?<br/>C04: grant, level, risk class,<br/>trust, rate limit, power stage"}
+  MAY -- deny --> X3["deny + reason"]
+  MAY -- require_approval --> APR["C05 owner approval"]
+  MAY -- permit --> EXE["C06 execute"]
+  APR -- approved --> EXE
+  APR -- denied/expired --> X4["closed"]
+  EXE --> DID{"Did it work?<br/>C14 independent observation"}
+  DID -- confirmed --> OK["record outcome"]
+  DID -- contradicted / not_confirmed --> INC["incident + demotion check"]

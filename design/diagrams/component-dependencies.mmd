@@ -1,0 +1,27 @@
+flowchart LR
+  C01[C01 Contracts] --> C02[C02 Core lib]
+  C01 --> C03[C03 Registry]
+  C02 --> C03
+  C02 --> C09[C09 Event log]
+  C02 --> C16[C16 Audit]
+  C02 --> C07[C07 Job Service v2]
+  C03 --> C04[C04 PDP]
+  C04 --> C06[C06 Action Gateway]
+  C16 --> C06
+  C09 --> C10[C10 Cell Runtime]
+  C06 --> C10
+  C04 --> C05[C05 Approval]
+  C05 --> C21[C21 Console/Telegram]
+  C02 --> C12[C12 Model Gateway]
+  C12 --> C11[C11 Agent Host]
+  C06 --> C11
+  C04 --> C13[C13 Evaluator]
+  C20[C20 HA adapter] --> C14[C14 Verifier]
+  C10 --> C20
+  C11 --> A01[A01 Field Station Agent]
+  C13 --> A01
+  C14 --> A01
+  C07 --> C08[C08 Workflows]
+  C12 --> C15[C15 Knowledge]
+  C15 --> A03[A03 Research]
+  C10 --> A02[A02 Fleet Doctor]

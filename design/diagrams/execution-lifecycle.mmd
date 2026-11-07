@@ -1,0 +1,23 @@
+sequenceDiagram
+  autonumber
+  participant AG as Agent (A01)
+  participant EV as C13 Evaluator
+  participant PDP as C04 PDP
+  participant AP as C05 Approval
+  participant OW as Owner (phone)
+  participant GW as C06 Action Gateway
+  participant AD as C20 Adapter
+  participant VF as C14 Verifier
+  AG->>EV: ActionProposal (signed)
+  EV->>PDP: Evaluation + DecisionRequest
+  PDP-->>AP: Decision = require_approval (params_hash, expires)
+  AP->>OW: Telegram private chat: action, reason, inputs, expected effect, undo, expiry
+  OW->>AP: /approve apr_123 482913
+  AP->>AP: check operator id, private chat, TOTP, request unchanged, not expired
+  AP->>GW: ActionRequest + Decision + Approval (signed)
+  GW->>GW: verify all signatures, params_hash, idempotency, rate limit, power stage
+  GW->>AD: call_service(...)
+  AD-->>GW: ok
+  GW-->>VF: ExecutionRecord + probe
+  VF->>AD: independent observation (other entity / later window)
+  VF-->>AG: Verification (confirmed | contradicted | not_confirmed)

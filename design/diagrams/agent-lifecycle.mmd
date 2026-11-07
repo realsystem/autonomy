@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Draft: manifest written
+  Draft --> Registered: owner signs registry entry
+  Registered --> Granted: owner issues grants
+  Granted --> Running: C11 starts (budget, tools bound)
+  Running --> Suspended: owner/C05 suspend · budget exceeded · demotion
+  Suspended --> Running: owner resume
+  Running --> Upgrading: new version registered
+  Upgrading --> Running: readiness ok + eval suite passed
+  Upgrading --> Running: rollback to previous version
+  Running --> Retired: owner retires
+  Suspended --> Retired
+  Retired --> [*]
