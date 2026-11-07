@@ -73,7 +73,7 @@ jobs:
           /tmp/venv/bin/autonomy-conformance --version
           n=$(/tmp/venv/bin/autonomy-conformance schemas | tail -n +2 | wc -l)
           echo "bundled schemas: $n"
-          test "$n" -eq "$(ls "$GITHUB_WORKSPACE"/spec/schemas/v0/*.schema.json | wc -l)"
+          test "$n" -eq "$(find "$GITHUB_WORKSPACE/spec/schemas/v0" -name '*.schema.json' | wc -l)"
           /tmp/venv/bin/autonomy-conformance selftest --fixtures "$GITHUB_WORKSPACE/spec/fixtures/v0"
           /tmp/venv/bin/autonomy-conformance check \
             --manifest "$GITHUB_WORKSPACE/spec/examples/job-service/autonomy.manifest.json" \
