@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autonomy-core"
+version = "0.1.0"
+description = "Autonomy core library (C02): envelopes, signatures, replay protection, outbox, audit chain"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary"}
+dependencies = ["cryptography>=41"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30"]
+dev = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30", "mypy>=1.8", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+autonomy_core = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "C4"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+mypy_path = "src"

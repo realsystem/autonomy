@@ -4,10 +4,10 @@ name: spec
 # spec/ or the workflows, on demand, and as the first stage of spec-release.yml.
 on:
   pull_request:
-    paths: ["spec/**", ".github/workflows/spec*.yml"]
+    paths: ["spec/**", ".github/workflows/**"]
   push:
     branches: [main]
-    paths: ["spec/**", ".github/workflows/spec*.yml"]
+    paths: ["spec/**", ".github/workflows/**"]
   workflow_dispatch:
   workflow_call:
 

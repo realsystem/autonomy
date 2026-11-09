@@ -1,0 +1,102 @@
+name: core
+
+# autonomy-core (C02), Python and Go. Runs when core/ or the spec it implements changes,
+# and on core release tags.
+on:
+  pull_request:
+    paths: ["core/**", "spec/**", ".github/workflows/core.yml"]
+  push:
+    branches: [main]
+    paths: ["core/**", "spec/**", ".github/workflows/core.yml"]
+    tags: ["core-v*", "core/go/v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  python:
+    name: python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: core/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: core/python/pyproject.toml
+      - name: Install
+        run: pip install ".[test]"
+      - name: Tests (spec vectors, fixtures, conformance of produced envelopes)
+        run: python -m pytest -q
+      - name: Installed package works outside the source tree
+        run: |
+          cd /tmp
+          python -c "import autonomy_core as ac; k = ac.generate_private_key(); e = ac.make_envelope(k, source='cell:x', type='health.heartbeat', data={}, seq=1, ttl=60); print(ac.verify_envelope(e, ac.KeyRing({'cell:x': ac.encode_public_key(k)})))"
+
+  python-lint:
+    name: python lint and types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ".[dev]"
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+      - run: mypy src
+
+  go:
+    name: go ${{ matrix.go }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.22", "stable"]
+    defaults:
+      run:
+        working-directory: core/go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: core/go/go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+
+  cross-language:
+    name: python <-> go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: core/go/go.mod
+      - run: pip install "./core/python[test]"
+      - name: Envelopes and canonical JSON agree across languages
+        working-directory: core/python
+        env:
+          AUTONOMY_REQUIRE_GO: "1"
+        run: python -m pytest -q tests/test_cross_go.py
