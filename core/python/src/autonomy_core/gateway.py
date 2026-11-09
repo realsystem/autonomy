@@ -35,10 +35,10 @@ from typing import Any, Protocol
 from .audit import AuditLog
 from .errors import Reject
 from .ids import parse_rfc3339, to_rfc3339
-from .keys import Ed25519PrivateKey, KeyRing
+from .keys import Ed25519PrivateKey, KeyRing, verify
 from .pdp import verify_owner_signed
 from .registry import Registry
-from .signing import params_hash, sign_object, verify_object
+from .signing import params_hash, sign_object, signing_input, verify_object
 
 log = logging.getLogger("autonomy_core.gateway")
 
@@ -150,6 +150,8 @@ class ActionGateway:
         audit: AuditLog | None = None,
         clock: Callable[[], float] = time.time,
         suspended: Callable[[], bool] = lambda: False,
+        blocked: Callable[[str], str | None] = lambda principal: None,
+        approval_keys: KeyRing | None = None,
         auto_per_target_hour: int = 2,
         breaker_hold: float = 24 * 3600.0,
     ):
@@ -167,6 +169,8 @@ class ActionGateway:
         self.audit = audit
         self.clock = clock
         self.suspended = suspended
+        self.blocked = blocked
+        self.approval_keys = approval_keys
         self.auto_per_target_hour = auto_per_target_hour
         self.breaker_hold = breaker_hold
         self.lock = threading.RLock()
@@ -289,6 +293,9 @@ class ActionGateway:
         proposal, decision = req["proposal"], req["decision"]
         if not isinstance(proposal, Mapping) or not isinstance(decision, Mapping):
             raise Reject("validation.malformed", "proposal and decision must be objects")
+        why_blocked = self.blocked(str(proposal.get("proposer", "")))
+        if why_blocked:  # suspend / hold come before everything else
+            raise Reject("policy.suspended", why_blocked)
         action = proposal.get("action")
         if not isinstance(action, Mapping) or not {"type", "target", "params"} <= set(action):
             raise Reject("validation.malformed", "proposal.action")
@@ -341,6 +348,14 @@ class ActionGateway:
         approver = str(approval.get("approver", ""))
         if wanted and approver not in wanted and approver != "owner:root":
             raise Reject("validation.approver", f"{approver} may not approve this")
+        attester = approval.get("attested_by")
+        if isinstance(attester, str):
+            key = self.approval_keys.get(attester) if self.approval_keys is not None else None
+            if key is None:
+                raise Reject("validation.approval_signature", f"{attester} is not a trusted approval service")
+            if not verify(key, signing_input(dict(approval), "approval"), str(approval.get("signature", ""))):
+                raise Reject("validation.approval_signature", f"not signed by {attester}")
+            return
         try:
             verify_owner_signed(approval, approver, self.registry, now)
         except Reject as why:

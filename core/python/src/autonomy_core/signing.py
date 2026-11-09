@@ -21,6 +21,7 @@ SIGNED: dict[str, tuple[str, str]] = {
     "execution-record": ("signature", "executor"),
     "verification": ("signature", "verifier"),
     "audit-record": ("signature", "actor"),
+    "control-order": ("signature", "issued_by"),
 }
 
 
@@ -44,9 +45,15 @@ def sign_object(obj: dict[str, Any], kind: str, key: Ed25519PrivateKey) -> dict[
     return obj
 
 
+# Kinds an approval service (C05) may sign on the owner's behalf: attested_by is the signer.
+ATTESTED = {"approval", "control-order"}
+
+
 def verify_object(obj: Mapping[str, Any], kind: str, keys: KeyRing) -> str:
     """Return the signer reference, or raise Reject("unknown signer" | "bad signature")."""
     sig_field, signer_field = SIGNED[kind]
+    if kind in ATTESTED and isinstance(obj.get("attested_by"), str):
+        signer_field = "attested_by"
     signer = obj.get(signer_field)
     if not isinstance(signer, str):
         raise Reject("malformed", f"{signer_field} missing")

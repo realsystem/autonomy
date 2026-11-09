@@ -1,6 +1,6 @@
-# autonomy-core v0.3.0 (C02; C03 tools; C04 PDP; C06 gateway)
+# autonomy-core v0.4.0 (C02; C03 tools; C04 PDP; C05 approvals; C06 gateway)
 
-**Status:** v0.3.0 draft (milestones M2, M3, M5) · 2026-11-09 · implements [spec](../spec/README.md) 0.3.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
+**Status:** v0.3.0 draft (milestones M2, M3, M5, M6) · 2026-11-09 · implements [spec](../spec/README.md) 0.4.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
 
 The one implementation of what every component does at its boundary: canonical JSON, Ed25519 keys and signatures, building and accepting envelopes, replay protection, a restart-safe sequence counter, a persistent outbox and the hash-chained audit log. Extracted from `edge_server`'s control plane.
 
@@ -18,6 +18,7 @@ The one implementation of what every component does at its boundary: canonical J
 | Audit | `AuditLog` (append, fsync), `verify_chain` | `VerifyChain` |
 | Registry | `verify_registry`, `RegistryStore`, `sign_registry`, `sign_owners`, `fingerprint` | `VerifyRegistry`, `CheckRegistryDocument`, `RegistryHash` |
 | Policy decisions (C04) | `Pdp`, `PolicyBundle`, `load_bundle`, `decision_request`; Cedar via `cedarpy` | — |
+| Approvals and owner control (C05) | `ApprovalService`, `ControlState` | — |
 | Action Gateway (C06) | `ActionGateway`, `AdapterResult`, `MockAdapter` | — |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
 

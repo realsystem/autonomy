@@ -1,0 +1,10 @@
+{
+  "order_id": "ord_01JC9Q4000000000000000RESU",
+  "kind": "resume",
+  "scope": "all",
+  "reason": "owner on holiday; nothing automatic",
+  "issued_by": "owner:ops",
+  "attested_by": "svc:approval@field-station",
+  "issued_at": "2026-11-09T19:00:00Z",
+  "signature": "ed25519:yDSV02eh8PQhW10aiyWVFx7blCgZalZ6X9plwIX6LDgo0HY-WAKhMEFpOQJG5LXOXHS1uuevarB8sDS2A10GBg"
+}

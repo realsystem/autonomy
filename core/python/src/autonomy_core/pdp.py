@@ -342,6 +342,13 @@ class Pdp:
             )
         # permitted; does the owner still have to approve?
         if owner:
+            if risk == "R2":  # consequential: also the owner's own command carries an approval
+                return Outcome(
+                    "require_approval",
+                    matched or ["owner"],
+                    "R2 needs an approval, also from the owner",
+                    grant,
+                )
             return Outcome("permit", matched or ["owner"], "the owner asked for it", grant)
         if risk != "R0":
             if ctx.get("trust") == "untrusted":

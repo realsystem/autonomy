@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/control-order.schema.json",
+  "title": "Control order",
+  "description": "Owner emergency control (C05): suspend a component or a cell, hold everything automatic, or resume. Signed by an owner key, or by the approval service named in attested_by after verifying the owner. hold and suspend are sticky until a resume for the same scope. Gateways refuse automatic actions in scope; owner-initiated actions continue.",
+  "type": "object",
+  "required": [
+    "order_id",
+    "kind",
+    "scope",
+    "reason",
+    "issued_by",
+    "issued_at",
+    "signature"
+  ],
+  "properties": {
+    "order_id": {
+      "type": "string",
+      "pattern": "^ord_[A-Za-z0-9_-]{1,64}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "suspend",
+        "hold",
+        "resume"
+      ]
+    },
+    "scope": {
+      "description": "all, a cell (cell:<name>) or a component (with or without @cell).",
+      "anyOf": [
+        {
+          "const": "all"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/component_ref"
+        }
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "issued_by": {
+      "$ref": "common.schema.json#/$defs/owner_id"
+    },
+    "attested_by": {
+      "$ref": "common.schema.json#/$defs/component_ref"
+    },
+    "issued_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "signature": {
+      "$ref": "common.schema.json#/$defs/signature"
+    }
+  },
+  "additionalProperties": false
+}

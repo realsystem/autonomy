@@ -1,0 +1,15 @@
+{
+  "description": "attestation verifies with the attester's key",
+  "expect": "does not verify",
+  "instance": {
+    "approval_id": "apr_01JC9Q40000000000000000002",
+    "decision_id": "dec_01JC9Q40000000000000000002",
+    "params_hash": "sha256:eed98f0c0a37acd8df10cb39aa355a0de87a3d69cd41772fefa6df2608ec97a2",
+    "approver": "owner:ops",
+    "attested_by": "svc:verifier@field-station",
+    "method": "telegram_totp",
+    "approved_at": "2026-11-06T18:31:02Z",
+    "expires": "2026-11-06T18:46:02Z",
+    "signature": "ed25519:kZolKR7nZIS7BWQst0z2oKNzK6UUz8kP_8N1XOFNV6gzTd0Wp_tH0yksSUsqwJJTZG1_I3lFTGWhSA4o64IaAw"
+  }
+}

@@ -1,6 +1,7 @@
 """autonomy-core (C02): the one implementation of Autonomy envelopes, signatures and the
 state behind them. Implements spec v0 (spec/README.md)."""
 
+from .approval import ApprovalService, ControlState
 from .audit import AuditLog, verify_chain
 from .envelope import (
     Freshness,
@@ -62,10 +63,12 @@ from .signing import (
     verify_object,
 )
 
-__version__ = "0.3.0"
-SPEC_VERSION = "0.3.0"  # the contracts version implemented
+__version__ = "0.4.0"
+SPEC_VERSION = "0.4.0"  # the contracts version implemented
 
 __all__ = [
+    "ApprovalService",
+    "ControlState",
     "ActionGateway",
     "AdapterResult",
     "AuditLog",
