@@ -2,7 +2,7 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
-## 0.1.0 — unreleased (M1)
+## 0.1.0 — 2026-11-08 (M1)
 
 First frozen contracts.
 
