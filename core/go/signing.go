@@ -22,7 +22,12 @@ var SignedFields = map[string][2]string{
 	"audit-record":     {"signature", "actor"},
 	// the signer field names the owner role; the key used is in "key"
 	"registry-signature": {"signature", "signer"},
+	"control-order":      {"signature", "issued_by"},
 }
+
+// Attested lists the kinds an approval service (C05) may sign on the owner's behalf:
+// when attested_by is present it names the signer.
+var Attested = map[string]bool{"approval": true, "control-order": true}
 
 // Reject is the error for a message or record that must not be acted on. Reason is a
 // short, stable phrase identical to the Python library's ("bad signature", "expired", ...).
@@ -98,9 +103,13 @@ func VerifyObject(obj map[string]any, kind string, ring *KeyRing) (string, error
 	if err != nil {
 		return "", err
 	}
-	signer, ok := obj[f[1]].(string)
+	signerField := f[1]
+	if att, isStr := obj["attested_by"].(string); isStr && Attested[kind] && att != "" {
+		signerField = "attested_by"
+	}
+	signer, ok := obj[signerField].(string)
 	if !ok {
-		return "", reject("malformed", f[1]+" missing")
+		return "", reject("malformed", signerField+" missing")
 	}
 	pub := ring.Get(signer)
 	if pub == nil {

@@ -178,7 +178,7 @@ func TestEnvelopeFixtures(t *testing.T) {
 
 func TestSignedFixtures(t *testing.T) {
 	ring, _ := testKeys(t)
-	for _, kind := range []string{"grant", "decision", "approval", "execution-record", "verification"} {
+	for _, kind := range []string{"grant", "decision", "approval", "execution-record", "verification", "control-order"} {
 		for _, path := range glob(t, "fixtures/v0/"+kind+"/valid/*.json") {
 			obj := readObject(t, path)
 			if _, err := VerifyObject(obj, kind, ring); err != nil {
