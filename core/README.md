@@ -1,6 +1,6 @@
-# autonomy-core v0.2.0 (C02, C03 tools)
+# autonomy-core v0.3.0 (C02; C03 tools; C04 PDP; C06 gateway)
 
-**Status:** v0.2.0 draft (milestones M2, M3) · 2026-11-08 · implements [spec](../spec/README.md) 0.2.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
+**Status:** v0.3.0 draft (milestones M2, M3, M5) · 2026-11-09 · implements [spec](../spec/README.md) 0.3.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
 
 The one implementation of what every component does at its boundary: canonical JSON, Ed25519 keys and signatures, building and accepting envelopes, replay protection, a restart-safe sequence counter, a persistent outbox and the hash-chained audit log. Extracted from `edge_server`'s control plane.
 
@@ -17,6 +17,8 @@ The one implementation of what every component does at its boundary: canonical J
 | Outbox | `Outbox` (on disk) | — (M4, for `processor`) |
 | Audit | `AuditLog` (append, fsync), `verify_chain` | `VerifyChain` |
 | Registry | `verify_registry`, `RegistryStore`, `sign_registry`, `sign_owners`, `fingerprint` | `VerifyRegistry`, `CheckRegistryDocument`, `RegistryHash` |
+| Policy decisions (C04) | `Pdp`, `PolicyBundle`, `load_bundle`, `decision_request`; Cedar via `cedarpy` | — |
+| Action Gateway (C06) | `ActionGateway`, `AdapterResult`, `MockAdapter` | — |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
 
 ## Use
@@ -57,6 +59,22 @@ autonomy registry delegate registry.yaml --root-key owner-root.pem --add new-ops
 ```
 
 Edits rewrite the YAML without its comments. `sign` refuses to write a signature cells would reject (inconsistent document, older serial). A cell uses `RegistryStore(state_dir).accept(doc, sig)`: it pins the root on first use and keeps the last valid registry when an update is refused. Rotating the root key means re-pinning every cell (delete `owner-root.pub` in its registry state) — deliberately manual.
+
+## Policy decisions and the gateway
+
+```python
+pdp = ac.Pdp(issuer="svc:pdp@field-station", key=key, bundle=ac.load_bundle(bundle_doc, registry))
+decision = pdp.decide(ac.decision_request(proposal, cell="field-station", risk_class="R1", evaluation="ok"))
+gateway = ac.ActionGateway(executor="svc:action-gateway@field-station", key=key, state_dir="/state/gw",
+                           pdp_keys=ac.KeyRing({"svc:pdp": pdp_public}), registry=registry,
+                           adapters=[ha_adapter], audit=ac.AuditLog("/state/audit.jsonl", cell="field-station",
+                           actor="svc:action-gateway@field-station", key=key))
+gateway.reconcile()   # at start-up: settle actions interrupted by a crash
+record = gateway.execute({"action_id": ..., "proposal": proposal, "decision": decision,
+                          "approval": approval, "idempotency_key": proposal["idempotency_key"]})
+```
+
+Decision rules (R3 never; Cedar `forbid` wins; grant, policy, owner or R0 must permit; untrusted input, evaluator escalation or a level below the risk send it to the owner; `@approvable` policies give `require_approval`) are in the `pdp` module docstring; gateway checks in the `gateway` module docstring. Real Cedar is tested in CI (`policy engine (Cedar)` job).
 
 ## Tests
 

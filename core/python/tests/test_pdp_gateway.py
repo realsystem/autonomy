@@ -541,9 +541,13 @@ def test_async_adapter(world):
     gw = world.make(adapters=[slow])
     r = action_request(world, proposal(key_suffix="async"))
     assert gw.execute(r)["status"] == "started"
-    assert world.make(adapters=[slow]).reconcile() == []  # still running, not "unknown"
-    done = gw.complete(r["action_id"], AdapterResult("succeeded", {"exit": 0}))
-    assert done["status"] == "succeeded" and gw.execute(r)["status"] == "succeeded"
+    reborn = world.make(adapters=[slow])
+    assert reborn.reconcile() == []  # still running, not "unknown"
+    assert reborn.started[r["action_id"]]["action"]["target"] == HELPER
+    assert len(reborn.history(NOW - 10)) == 1  # one action, not one per journal line
+    done = reborn.complete(r["action_id"], AdapterResult("succeeded", {"exit": 0}))
+    assert done["status"] == "succeeded"
+    assert world.make(adapters=[slow]).execute(r)["status"] == "succeeded"
     with pytest.raises(Reject):
         gw.complete("act_nope", AdapterResult("succeeded"))
 

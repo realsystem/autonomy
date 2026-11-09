@@ -198,8 +198,8 @@ class ActionGateway:
         settled = []
         with self.lock:
             for aid, entry in list(self.started.items()):
-                if self.records.get(aid, {}).get("status") == "started" and entry.get("async"):
-                    continue  # still legitimately running in an asynchronous adapter
+                if self.records.get(aid, {}).get("status") == "started":
+                    continue  # accepted by an asynchronous adapter, outcome still to come
                 adapter = self.adapters.get(str(entry["action"]["type"]))
                 result = adapter.reconcile(aid, entry["action"]) if adapter else None
                 if result is None or result.status == "started":
@@ -446,7 +446,7 @@ class ActionGateway:
         self.records[entry["action_id"]] = rec
         self.journal.append(
             {
-                "event": status,
+                "event": "running" if status == "started" else status,  # "started" is the write-ahead entry
                 "action_id": entry["action_id"],
                 "at": now,
                 "idempotency_key": entry.get("idempotency_key"),
