@@ -310,6 +310,23 @@ def registry_signature(reg: dict | None = None, serial: int = 1) -> dict:
                       "signer": "owner:ops", "key": pub("owner:ops"), "comment": "add job-service"}, "signature", "owner:ops")
 
 
+def policy_bundle() -> dict:
+    return sign_with({
+        "bundle": "2026.11.09-1", "issued_at": "2026-11-09T12:00:00Z",
+        "policies": [
+            {"id": "farm-helpers", "description": "R1 helper writes for the Field Station agent, within its grant",
+             "cedar": 'permit (principal == Agent::"field-station", action == Action::"ha.helper.set", resource in Group::"farm_helpers")\n'
+                      'when { context.risk_class == "R1" && context.evaluation == "ok" && context.trust == "trusted" && context has grant };'},
+            {"id": "untrusted-needs-owner", "approvable": True, "description": "untrusted-derived changes need an owner",
+             "cedar": 'permit (principal, action, resource)\nwhen { context.trust == "untrusted" && context.risk_class != "R0" && context has approval && context.approval.valid };'},
+            {"id": "no-r3", "cedar": 'forbid (principal, action, resource) when { context.risk_class == "R3" };'},
+        ],
+        "groups": {"farm_helpers": [HELPER, "input_text.farm_agent_daily_note"]},
+        "grants": [grant()],
+        "signer": "owner:ops", "key": pub("owner:ops"), "comment": "first bundle",
+    }, "signature", "owner:ops")
+
+
 def valid_fixtures() -> dict[str, dict[str, object]]:
     p = proposal()
     obs = envelope("adapter:ha@field-station", "observation.ha.state_changed", 48213,
@@ -349,6 +366,7 @@ def valid_fixtures() -> dict[str, dict[str, object]]:
         "job": {"record": job(), "submission": job(submission=True)},
         "registry": {"two-site": registry()},
         "registry-signature": {"ops": registry_signature()},
+        "policy-bundle": {"farm": policy_bundle()},
     }
 
 
@@ -493,6 +511,12 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
     case("registry-signature", "tampered-serial", "serial is signed", "signature does not verify", rs, setp(["serial"], 99))
     case("registry-signature", "serial-zero", "serials start at 1", "less than the minimum", rs, setp(["serial"], 0))
     case("registry-signature", "agent-signer", "only owners sign registries", "signer", rs, setp(["signer"], "agent:field-station"))
+    pb = v["policy-bundle"]["farm"]
+    case("policy-bundle", "tampered-policy", "policies are signed", "signature does not verify", pb, setp(["policies", 2, "cedar"], "forbid (principal, action, resource) when { false };"))
+    case("policy-bundle", "two-statements", "one statement per policy", "exactly one permit or forbid", pb,
+         setp(["policies", 2, "cedar"], 'forbid (principal, action, resource) when { false };\npermit (principal, action, resource);'), None)
+    case("policy-bundle", "bad-version", "YYYY.MM.DD-n", "bundle", pb, setp(["bundle"], "v2"))
+    case("policy-bundle", "duplicate-policy", "policy ids are unique", "used twice", pb, lambda o: o["policies"].append(dict(o["policies"][0])))
     case("decision-request", "missing-now", "policy needs the time", "'now' is a required property", v["decision-request"]["climate-factor"], setp(["context", "now"], DELETE))
     return out
 

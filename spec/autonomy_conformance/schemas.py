@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 
-SPEC_VERSION = "0.2.0"
+SPEC_VERSION = "0.3.0"
 MAJOR = 0
 BASE_URI = f"https://autonomy.local/spec/v{MAJOR}/"
 
@@ -22,7 +22,7 @@ CONTRACTS = {
     "error": ["error"],
     "logging": ["log-record"],
     "action-lifecycle": [
-        "grant", "action-proposal", "evaluation", "decision-request", "decision",
+        "grant", "policy-bundle", "action-proposal", "evaluation", "decision-request", "decision",
         "approval", "action-request", "execution-record", "verification",
     ],
     "audit": ["audit-record"],

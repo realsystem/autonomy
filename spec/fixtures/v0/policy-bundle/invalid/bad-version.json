@@ -1,0 +1,69 @@
+{
+  "description": "YYYY.MM.DD-n",
+  "expect": "bundle",
+  "instance": {
+    "bundle": "v2",
+    "issued_at": "2026-11-09T12:00:00Z",
+    "policies": [
+      {
+        "id": "farm-helpers",
+        "description": "R1 helper writes for the Field Station agent, within its grant",
+        "cedar": "permit (principal == Agent::\"field-station\", action == Action::\"ha.helper.set\", resource in Group::\"farm_helpers\")\nwhen { context.risk_class == \"R1\" && context.evaluation == \"ok\" && context.trust == \"trusted\" && context has grant };"
+      },
+      {
+        "id": "untrusted-needs-owner",
+        "approvable": true,
+        "description": "untrusted-derived changes need an owner",
+        "cedar": "permit (principal, action, resource)\nwhen { context.trust == \"untrusted\" && context.risk_class != \"R0\" && context has approval && context.approval.valid };"
+      },
+      {
+        "id": "no-r3",
+        "cedar": "forbid (principal, action, resource) when { context.risk_class == \"R3\" };"
+      }
+    ],
+    "groups": {
+      "farm_helpers": [
+        "input_number.farm_irrigation_recommended_climate_factor",
+        "input_text.farm_agent_daily_note"
+      ]
+    },
+    "grants": [
+      {
+        "grant_id": "grt_2026_11_farm_helpers",
+        "grantee": "agent:field-station",
+        "responsibility": "irrigation.recommendation",
+        "autonomy_level": "A2",
+        "actions": [
+          "ha.helper.set"
+        ],
+        "resources": {
+          "entities": [
+            "input_number.farm_irrigation_recommended_climate_factor",
+            "input_text.farm_agent_daily_note"
+          ]
+        },
+        "constraints": {
+          "max_per_day": 4,
+          "value_range": {
+            "min": 30,
+            "max": 200
+          },
+          "cells": [
+            "field-station"
+          ],
+          "power_stage_min": "normal",
+          "max_risk_class": "R1"
+        },
+        "requires_verification": true,
+        "valid_from": "2026-11-10T00:00:00Z",
+        "expires": "2026-12-10T00:00:00Z",
+        "issued_by": "owner:ops",
+        "signature": "ed25519:fhHR9L2XoqZALgVM82zyw61m4-JUvVUaTEH-QAJZs9_6D8NX1uJm3HEZ6f3hdtjjK-K7TPd-wZYgXAbPA0opAA"
+      }
+    ],
+    "signer": "owner:ops",
+    "key": "ed25519:rS59uDpD57fOra4899EXOPFJT3YHih2aMHP58HCik5M",
+    "comment": "first bundle",
+    "signature": "ed25519:Y-b85rD51U85c9kzrNLV9Y3nLMr5gQQxKf82gyy17A5pOxHgt86EAZSBx9wiIzeqwPTC0bxiqMoC3fQD5hZPDQ"
+  }
+}

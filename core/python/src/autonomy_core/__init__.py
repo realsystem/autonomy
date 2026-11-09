@@ -12,6 +12,7 @@ from .envelope import (
     verify_envelope,
 )
 from .errors import Reject
+from .gateway import ActionGateway, AdapterResult, MockAdapter
 from .ids import (
     child_traceparent,
     is_component_ref,
@@ -36,6 +37,7 @@ from .keys import (
     verify,
 )
 from .outbox import Outbox
+from .pdp import Pdp, Policy, PolicyBundle, decision_request, load_bundle
 from .registry import (
     Component,
     Registry,
@@ -60,10 +62,12 @@ from .signing import (
     verify_object,
 )
 
-__version__ = "0.2.0"
-SPEC_VERSION = "0.2.0"  # the contracts version implemented
+__version__ = "0.3.0"
+SPEC_VERSION = "0.3.0"  # the contracts version implemented
 
 __all__ = [
+    "ActionGateway",
+    "AdapterResult",
     "AuditLog",
     "CanonicalizationError",
     "Component",
@@ -71,7 +75,11 @@ __all__ = [
     "Freshness",
     "GENESIS_HASH",
     "KeyRing",
+    "MockAdapter",
     "Outbox",
+    "Pdp",
+    "Policy",
+    "PolicyBundle",
     "Registry",
     "RegistryStore",
     "Reject",
@@ -83,6 +91,7 @@ __all__ = [
     "check_fresh",
     "check_structure",
     "child_traceparent",
+    "decision_request",
     "decode_public_key",
     "encode_public_key",
     "envelope_times",
@@ -91,6 +100,7 @@ __all__ = [
     "is_component_ref",
     "is_envelope",
     "is_name",
+    "load_bundle",
     "load_private_key",
     "make_envelope",
     "new_correlation_id",
