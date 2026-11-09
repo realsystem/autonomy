@@ -45,6 +45,24 @@ jobs:
           cd /tmp
           python -c "import autonomy_core as ac; k = ac.generate_private_key(); e = ac.make_envelope(k, source='cell:x', type='health.heartbeat', data={}, seq=1, ttl=60); print(ac.verify_envelope(e, ac.KeyRing({'cell:x': ac.encode_public_key(k)})))"
 
+  cedar:
+    name: policy engine (Cedar)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install with cedarpy
+        run: pip install ".[test,cedar]"
+      - name: PDP decisions with real Cedar policies (ADR-004)
+        env:
+          AUTONOMY_REQUIRE_CEDAR: "1"
+        run: python -m pytest -q tests/test_pdp_gateway.py
+
   python-lint:
     name: python lint and types
     runs-on: ubuntu-latest

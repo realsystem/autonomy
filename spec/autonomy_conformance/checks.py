@@ -235,6 +235,24 @@ def _registry(r: dict, where: str, ctx: Context) -> Iterable[Finding]:
             yield Finding("error", f"{where}.nodes.{name}.site", f"site {node['site']} is not in sites")
 
 
+def _policy_bundle(b: dict, where: str, ctx: Context) -> Iterable[Finding]:
+    reason = crypto.verify_with_key(b, "signature", b["key"])
+    if reason:
+        yield Finding("error", f"{where}.signature", reason)
+    ids = [p["id"] for p in b["policies"]]
+    for dup in sorted({i for i in ids if ids.count(i) > 1}):
+        yield Finding("error", f"{where}.policies", f"policy id {dup} used twice")
+    for i, p in enumerate(b["policies"]):
+        n = len(re.findall(r"(?m)^\s*(?:@[^\n]*\n\s*)*(permit|forbid)\s*\(", p["cedar"]))
+        if n != 1:
+            yield Finding("error", f"{where}.policies[{i}].cedar", f"must hold exactly one permit or forbid statement, found {n}")
+    gids = [g["grant_id"] for g in b["grants"]]
+    for dup in sorted({i for i in gids if gids.count(i) > 1}):
+        yield Finding("error", f"{where}.grants", f"grant {dup} listed twice")
+    for i, g in enumerate(b["grants"]):
+        yield from (Finding(f.level, f.where.replace(where, f"{where}.grants[{i}]", 1), f.message) for f in _grant(g, where, ctx))
+
+
 def _registry_signature(s: dict, where: str, ctx: Context) -> Iterable[Finding]:
     reason = crypto.verify_with_key(s, "signature", s["key"])
     if reason:
@@ -252,6 +270,7 @@ RULES: dict[str, Callable[[dict, str, Context], Iterable[Finding]]] = {
     "audit-record": _audit_record,
     "registry": _registry,
     "registry-signature": _registry_signature,
+    "policy-bundle": _policy_bundle,
 }
 
 

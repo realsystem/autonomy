@@ -2,6 +2,12 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
+## 0.3.0 — unreleased (M5)
+
+Backward compatible with 0.2.
+
+- New schema `policy-bundle` (contract `action-lifecycle`): owner-signed grants, Cedar policies (one statement each, optionally `approvable`) and resource groups, versioned `YYYY.MM.DD-n`. Conformance rules and fixtures.
+
 ## 0.2.0 — unreleased (M3)
 
 Backward compatible with 0.1 (`compat` reports only additions).

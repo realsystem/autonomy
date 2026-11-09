@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/policy-bundle.schema.json",
+  "title": "Policy bundle",
+  "description": "What a cell's PDP (C04) decides with: owner-signed grants and Cedar policies. Signed by owner:ops or owner:root (a key in the registry's owners). A cell refuses a bundle older than the active one unless root signs it. Each policy is one Cedar statement; approvable policies turn a deny into require_approval when they would permit with a valid approval in context.",
+  "type": "object",
+  "required": ["bundle", "issued_at", "policies", "grants", "signer", "key", "signature"],
+  "properties": {
+    "bundle": {"type": "string", "pattern": "^[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}-[1-9][0-9]*$", "description": "YYYY.MM.DD-n; orders bundles."},
+    "issued_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "policies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "cedar"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"},
+          "cedar": {"type": "string", "minLength": 1, "maxLength": 20000},
+          "approvable": {"type": "boolean"},
+          "description": {"type": "string", "maxLength": 500}
+        },
+        "additionalProperties": false
+      }
+    },
+    "groups": {
+      "description": "Resource groups for Cedar `resource in Group::\"name\"`: group name -> resources.",
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$"},
+      "additionalProperties": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 256}, "uniqueItems": true}
+    },
+    "grants": {"type": "array", "items": {"$ref": "grant.schema.json"}},
+    "signer": {"$ref": "common.schema.json#/$defs/owner_id"},
+    "key": {"$ref": "common.schema.json#/$defs/public_key"},
+    "comment": {"type": "string", "maxLength": 500},
+    "signature": {"$ref": "common.schema.json#/$defs/signature"}
+  },
+  "additionalProperties": false
+}
