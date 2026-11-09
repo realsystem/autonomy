@@ -9,7 +9,7 @@ Identifiers are stable across the package: **C** = platform component, **A** = s
 | Id | Component | Existing repo | New / existing | Primary responsibility | Depends on | Public contracts | Independent dev | Priority | Maturity |
 |---|---|---|---|---|---|---|---|---|---|
 | C01 | Contracts | `autonomy` (`spec/`, new) | New | Schemas, versioning rules, conformance kit | — | All schemas | High | P0 | In progress: [`spec/`](../spec/README.md) v0.1.0 draft |
-| C02 | Core Library | `edge_server/telegram-bot/controlplane.py` | Extract | Signing, envelope, outbox, audit append, PDP embedding, telemetry helpers (Python + Go) | C01 | Library API | High | P0 | Partial (Python primitives exist) |
+| C02 | Core Library | `edge_server/telegram-bot/controlplane.py` | Extract | Signing, envelope, outbox, audit append, PDP embedding, telemetry helpers (Python + Go) | C01 | Library API | High | P0 | In progress: [`core/`](../core/README.md) v0.1.0 draft (PDP and telemetry helpers later) |
 | C03 | Identity & Registry | `edge_server` `fleet.yaml`, `tools/fleet.py` | Refactor | Owner keys, component/node enrollment, signed registry document | C01, C02 | Registry document, enrollment request | High | P0 | Partial (nodes only) |
 | C04 | Policy & Authority | — | New | Policy Decision Point, grants, autonomy levels, risk classes | C01–C03 | Decision, Grant, policy bundle | High | P1 | Not started |
 | C05 | Approval & Owner Control | `edge_server` approval design, Telegram bot | Refactor | Approval requests, owner approvals, revocations, suspend/e-stop | C02–C04, C21 | Approval, Revocation, Suspend | Medium | P1 | Design only |

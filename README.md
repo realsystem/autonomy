@@ -8,6 +8,7 @@ A modular, distributed system that progressively takes over ongoing responsibili
 |---|---|
 | [`design/`](design/README.md) | Design package (draft 0.1): architecture, component catalog, **component contracts**, governance, roadmap, ADRs, diagrams |
 | [`spec/`](spec/README.md) | Contracts v0.1.0 (milestone M1, component C01): JSON Schemas, fixtures, vectors and the `autonomy-conformance` CLI |
+| [`core/`](core/README.md) | Core library v0.1.0 (milestone M2, component C02): envelopes, signatures, replay protection, outbox, audit chain — Python and Go |
 
 ## Start here
 

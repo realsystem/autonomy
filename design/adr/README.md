@@ -16,5 +16,6 @@
 | [ADR-012](ADR-012-model-gateway-library.md) | Model Gateway as a library from `jarvis`; no agent framework dependency | Accepted |
 | [ADR-013](ADR-013-sops-age-and-cell-secret-stores.md) | Secrets: per-cell stores + SOPS/age; no Vault now | Accepted |
 | [ADR-014](ADR-014-design-package-location.md) | Design package and contracts live in `realsystem/autonomy` | Accepted |
+| [ADR-015](ADR-015-core-library-location-and-consumption.md) | Core library (C02) lives in `realsystem/autonomy/core/`, consumed by pinned ref | Proposed |
 
 Provisional decisions are expected to change when their revisit condition is met.
