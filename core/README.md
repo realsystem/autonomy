@@ -1,6 +1,6 @@
-# autonomy-core v0.1.0 (C02)
+# autonomy-core v0.2.0 (C02, C03 tools)
 
-**Status:** v0.1.0 draft (milestone M2) · 2026-11-08 · implements [spec](../spec/README.md) 0.1.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
+**Status:** v0.2.0 draft (milestones M2, M3) · 2026-11-08 · implements [spec](../spec/README.md) 0.2.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
 
 The one implementation of what every component does at its boundary: canonical JSON, Ed25519 keys and signatures, building and accepting envelopes, replay protection, a restart-safe sequence counter, a persistent outbox and the hash-chained audit log. Extracted from `edge_server`'s control plane.
 
@@ -16,6 +16,7 @@ The one implementation of what every component does at its boundary: canonical J
 | Replay / sequence | `SeenStore` (on disk), `Counter` (on disk) | `Seen` interface, `MemorySeen` |
 | Outbox | `Outbox` (on disk) | — (M4, for `processor`) |
 | Audit | `AuditLog` (append, fsync), `verify_chain` | `VerifyChain` |
+| Registry | `verify_registry`, `RegistryStore`, `sign_registry`, `sign_owners`, `fingerprint` | `VerifyRegistry`, `CheckRegistryDocument`, `RegistryHash` |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
 
 ## Use
@@ -39,6 +40,23 @@ except ac.Reject as why:
 `verify_envelope` checks, in order: structure, signature, freshness, replay — so unsigned traffic cannot fill the replay store. `Reject.reason` is a short stable phrase, identical in Python and Go: `malformed`, `unknown protocol version`, `unknown signer`, `bad signature`, `from the future`, `expired`, `lifetime too long`, `replayed`, `too many messages in flight`.
 
 Freshness defaults: up to 120 s in the future; no lifetime cap; envelopes without `expires` accepted for 600 s after `time`. Receivers of commands should set `require_expires`.
+
+## The owner's registry tool
+
+`pip install "autonomy-core[cli] @ https://github.com/realsystem/autonomy/archive/<ref>.tar.gz#subdirectory=core/python"` gives the `autonomy` command:
+
+```bash
+autonomy keygen owner-root.pem                      # offline: signs only the owners section
+autonomy keygen owner-ops.pem                       # online: signs day-to-day registry updates
+autonomy registry migrate fleet.yaml registry.yaml --root-key owner-root.pem --ops-key owner-ops.pub
+autonomy registry add-component registry.yaml --manifest autonomy.manifest.json --key ed25519:... --cells home-hub
+autonomy registry sign registry.yaml --key owner-ops.pem     # registry.json + registry.sig.json, serial + 1
+autonomy registry verify registry.json --root owner-root.pub
+autonomy registry revoke registry.yaml svc:old --reason "key lost"
+autonomy registry delegate registry.yaml --root-key owner-root.pem --add new-ops.pub --remove owner-ops.pub
+```
+
+Edits rewrite the YAML without its comments. `sign` refuses to write a signature cells would reject (inconsistent document, older serial). A cell uses `RegistryStore(state_dir).accept(doc, sig)`: it pins the root on first use and keeps the last valid registry when an update is refused. Rotating the root key means re-pinning every cell (delete `owner-root.pub` in its registry state) — deliberately manual.
 
 ## Tests
 

@@ -36,6 +36,19 @@ from .keys import (
     verify,
 )
 from .outbox import Outbox
+from .registry import (
+    Component,
+    Registry,
+    RegistryStore,
+    check_document,
+    fingerprint,
+    ops_keys,
+    registry_hash,
+    same_key,
+    sign_owners,
+    sign_registry,
+    verify_registry,
+)
 from .replay import Counter, SeenStore
 from .signing import (
     GENESIS_HASH,
@@ -47,28 +60,33 @@ from .signing import (
     verify_object,
 )
 
-__version__ = "0.1.0"
-SPEC_VERSION = "0.1.0"  # the contracts version implemented
+__version__ = "0.2.0"
+SPEC_VERSION = "0.2.0"  # the contracts version implemented
 
 __all__ = [
     "AuditLog",
     "CanonicalizationError",
+    "Component",
     "Counter",
     "Freshness",
     "GENESIS_HASH",
     "KeyRing",
     "Outbox",
+    "Registry",
+    "RegistryStore",
     "Reject",
     "SPEC_VERSION",
     "SeenStore",
     "audit_hash",
     "canonicalize",
+    "check_document",
     "check_fresh",
     "check_structure",
     "child_traceparent",
     "decode_public_key",
     "encode_public_key",
     "envelope_times",
+    "fingerprint",
     "generate_private_key",
     "is_component_ref",
     "is_envelope",
@@ -78,18 +96,24 @@ __all__ = [
     "new_correlation_id",
     "new_traceparent",
     "new_ulid",
+    "ops_keys",
     "params_hash",
     "parse_rfc3339",
     "prefixed_id",
     "private_key_from_seed",
+    "registry_hash",
+    "same_key",
     "save_private_key",
     "sha256_tagged",
     "sign",
     "sign_object",
+    "sign_owners",
+    "sign_registry",
     "signing_input",
     "to_rfc3339",
     "verify",
     "verify_chain",
     "verify_envelope",
     "verify_object",
+    "verify_registry",
 ]

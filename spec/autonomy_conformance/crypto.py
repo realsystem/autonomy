@@ -62,6 +62,38 @@ def audit_hash(record: Mapping[str, Any]) -> str:
     return sha256_tagged(record["prev_hash"].encode("utf-8") + body)
 
 
+def key_bytes(text: str) -> bytes | None:
+    """Raw 32 bytes of a key in either accepted form (ed25519:<base64url> or base64)."""
+    try:
+        if text.startswith("ed25519:"):
+            raw = b64url_decode(text.split(":", 1)[1])
+        else:
+            raw = base64.b64decode(text, validate=True)
+    except (ValueError, TypeError):
+        return None
+    return raw if len(raw) == 32 else None
+
+
+def verify_with_key(obj: Mapping[str, Any], sig_field: str, key: str) -> str | None:
+    """Verify obj[sig_field] with an explicit key; None when valid, otherwise a reason."""
+    try:
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    except ImportError:  # pragma: no cover
+        return "the 'cryptography' package is required to verify signatures"
+    raw = key_bytes(key)
+    sig = obj.get(sig_field)
+    if raw is None or not isinstance(sig, str) or ":" not in sig:
+        return "malformed key or signature"
+    try:
+        Ed25519PublicKey.from_public_bytes(raw).verify(b64url_decode(sig.split(":", 1)[1]), signing_input(obj, sig_field))
+    except InvalidSignature:
+        return f"{sig_field} does not verify"
+    except ValueError as e:
+        return f"malformed signature: {e}"
+    return None
+
+
 def lookup_key(keys: Mapping[str, str], signer: str) -> str | None:
     """Find a signer's key: exact reference first, then the component without @cell."""
     if signer in keys:

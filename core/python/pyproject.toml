@@ -4,16 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autonomy-core"
-version = "0.1.0"
-description = "Autonomy core library (C02): envelopes, signatures, replay protection, outbox, audit chain"
+version = "0.2.0"
+description = "Autonomy core library (C02) and owner registry tools (C03): envelopes, signatures, replay protection, outbox, audit chain, signed registry"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Proprietary"}
 dependencies = ["cryptography>=41"]
 
 [project.optional-dependencies]
-test = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30"]
-dev = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30", "mypy>=1.8", "ruff>=0.4"]
+cli = ["PyYAML>=6"]
+test = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30", "PyYAML>=6"]
+dev = ["pytest>=7", "jsonschema>=4.18", "referencing>=0.30", "PyYAML>=6", "types-PyYAML", "mypy>=1.8", "ruff>=0.4"]
+
+[project.scripts]
+autonomy = "autonomy_core.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

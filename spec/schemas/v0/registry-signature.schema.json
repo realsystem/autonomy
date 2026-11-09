@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/registry-signature.schema.json",
+  "title": "Registry signature",
+  "description": "Detached signature of a registry (registry.yaml.sig.json). serial only goes up: a cell refuses a registry with a lower serial than the one it holds, and a different registry with the same serial.",
+  "type": "object",
+  "required": ["registry_hash", "serial", "signed_at", "signer", "key", "signature"],
+  "properties": {
+    "registry_hash": {"$ref": "common.schema.json#/$defs/sha256", "description": "sha256 of the canonical JSON of the registry document."},
+    "serial": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "signed_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "signer": {"$ref": "common.schema.json#/$defs/owner_id"},
+    "key": {"$ref": "common.schema.json#/$defs/public_key", "description": "owners.root for owner:root, one of owners.ops for owner:ops."},
+    "comment": {"type": "string", "maxLength": 500},
+    "signature": {"$ref": "common.schema.json#/$defs/signature", "description": "Over the canonical JSON of this document without signature."}
+  },
+  "additionalProperties": false
+}

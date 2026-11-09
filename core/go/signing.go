@@ -20,6 +20,8 @@ var SignedFields = map[string][2]string{
 	"execution-record": {"signature", "executor"},
 	"verification":     {"signature", "verifier"},
 	"audit-record":     {"signature", "actor"},
+	// the signer field names the owner role; the key used is in "key"
+	"registry-signature": {"signature", "signer"},
 }
 
 // Reject is the error for a message or record that must not be acted on. Reason is a

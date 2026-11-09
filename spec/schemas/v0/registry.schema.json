@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/registry.schema.json",
+  "title": "Registry",
+  "description": "The owner-signed list of who exists: owner keys, cells (fleet nodes), components and revoked identities. A generalised edge_server fleet.yaml: its schema_version, fleet, sites and nodes sections keep their meaning, and node settings beyond the ones listed here are validated by edge_server. Signed by a detached registry-signature over the canonical JSON of this document. Closed at the top level: authority must not hide in unknown keys.",
+  "type": "object",
+  "required": ["registry_format", "owners", "nodes"],
+  "properties": {
+    "registry_format": {"const": 1},
+    "schema_version": {"description": "edge_server fleet file format (1).", "type": "integer", "minimum": 1},
+    "fleet": {"description": "edge_server fleet-wide settings (telegram, alert_order, ...).", "type": "object"},
+    "sites": {
+      "type": "object",
+      "propertyNames": {"$ref": "common.schema.json#/$defs/name"},
+      "additionalProperties": {"type": ["object", "null"]}
+    },
+    "owners": {
+      "description": "Trust root. Changing this section needs the root key: its signature covers it.",
+      "type": "object",
+      "required": ["root", "ops", "signature"],
+      "properties": {
+        "root": {"$ref": "common.schema.json#/$defs/public_key", "description": "owner:root, kept offline. Cells pin it."},
+        "ops": {
+          "description": "owner:ops keys delegated by root for day-to-day registry signing and approvals.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "expires"],
+            "properties": {
+              "key": {"$ref": "common.schema.json#/$defs/public_key"},
+              "expires": {"$ref": "common.schema.json#/$defs/timestamp"},
+              "comment": {"type": "string", "maxLength": 200}
+            },
+            "additionalProperties": false
+          }
+        },
+        "signature": {"$ref": "common.schema.json#/$defs/signature", "description": "owner:root over the canonical JSON of owners without signature."}
+      },
+      "additionalProperties": false
+    },
+    "nodes": {
+      "description": "Cells, by name; each signs as cell:<name>.",
+      "type": "object",
+      "propertyNames": {"$ref": "common.schema.json#/$defs/cell"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["site", "public_key"],
+        "properties": {
+          "site": {"$ref": "common.schema.json#/$defs/name"},
+          "public_key": {"$ref": "#/$defs/key_text"},
+          "roles": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}, "uniqueItems": true}
+        },
+        "additionalProperties": true
+      }
+    },
+    "components": {
+      "description": "Components and agents, by component_id.",
+      "type": "object",
+      "propertyNames": {"$ref": "common.schema.json#/$defs/component_id"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["public_key", "version", "manifest_hash", "cells"],
+        "properties": {
+          "public_key": {"$ref": "#/$defs/key_text"},
+          "version": {"$ref": "common.schema.json#/$defs/semver"},
+          "manifest_hash": {"$ref": "common.schema.json#/$defs/sha256", "description": "sha256 of the canonical JSON of the component's manifest."},
+          "cells": {
+            "description": "Cells the component runs on or reports to; each accepts its envelopes.",
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "common.schema.json#/$defs/cell"},
+            "uniqueItems": true
+          },
+          "contracts": {
+            "description": "Copied from the manifest: contract name → version range.",
+            "type": "object",
+            "additionalProperties": {"$ref": "common.schema.json#/$defs/version_range"}
+          },
+          "comment": {"type": "string", "maxLength": 200}
+        },
+        "additionalProperties": false
+      }
+    },
+    "revoked": {
+      "description": "Identities that must never be accepted again, even if re-added by mistake.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "key", "revoked_at", "reason"],
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/component_ref"},
+          "key": {"$ref": "#/$defs/key_text"},
+          "revoked_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 500}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "key_text": {
+      "description": "An Ed25519 public key: ed25519:<base64url>, or standard base64 of the 32 raw bytes (edge_server fleet.yaml form).",
+      "type": "string",
+      "pattern": "^(?:ed25519:[A-Za-z0-9_-]{43}|[A-Za-z0-9+/]{43}=)$"
+    }
+  }
+}

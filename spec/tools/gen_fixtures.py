@@ -35,7 +35,7 @@ from autonomy_conformance.schemas import BASE_URI  # noqa: E402
 
 SIGNERS = [
     "owner:root", "owner:ops",
-    "cell:field-station", "agent:field-station", "adapter:ha",
+    "cell:field-station", "cell:home-hub", "agent:field-station", "adapter:ha",
     "svc:evaluator", "svc:pdp", "svc:action-gateway", "svc:verifier", "svc:job-service",
 ]
 CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -272,6 +272,44 @@ CONFIG_HASH = "sha256:" + hashlib.sha256(b"example effective config").hexdigest(
 REGISTRY_HASH = "sha256:" + hashlib.sha256(b"example registry").hexdigest()
 
 
+def sign_with(obj: dict, field: str, signer: str) -> dict:
+    obj.pop(field, None)
+    obj[field] = "ed25519:" + crypto.b64url_encode(KEYS[signer].sign(canonicalize(obj)))
+    return obj
+
+
+def registry() -> dict:
+    owners = sign_with({"root": pub("owner:root"), "ops": [{"key": pub("owner:ops"), "expires": "2027-11-08T00:00:00Z", "comment": "laptop"}]},
+                       "signature", "owner:root")
+    agent = manifest_agent()
+    return {
+        "registry_format": 1,
+        "schema_version": 1,
+        "fleet": {"name": "farm", "telegram": {"operators": [100000001]}, "alert_order": ["home-hub", "field-station"]},
+        "sites": {"remote": {"timezone": "UTC"}, "home": None},
+        "owners": owners,
+        "nodes": {
+            "field-station": {"site": "remote", "packaging": "ha-addon", "roles": ["ha"], "public_key": pub("cell:field-station"), "tailscale": "field-station"},
+            "home-hub": {"site": "home", "packaging": "host", "roles": ["nvr", "archive"], "public_key": pub("cell:home-hub"), "tailscale": "home-hub"},
+        },
+        "components": {
+            "agent:field-station": {"public_key": pub("agent:field-station"), "version": agent["version"],
+                                    "manifest_hash": crypto.sha256_tagged(canonicalize(agent)), "cells": ["field-station"],
+                                    "contracts": agent["contracts"]},
+            "svc:job-service": {"public_key": pub("svc:job-service"), "version": "2.0.0",
+                                "manifest_hash": "sha256:" + hashlib.sha256(b"job-service manifest").hexdigest(), "cells": ["home-hub"]},
+        },
+        "revoked": [{"id": "adapter:old-ha", "key": "ed25519:" + crypto.b64url_encode(hashlib.sha256(b"old key").digest()),
+                     "revoked_at": "2026-11-01T00:00:00Z", "reason": "replaced by adapter:ha"}],
+    }
+
+
+def registry_signature(reg: dict | None = None, serial: int = 1) -> dict:
+    reg = registry() if reg is None else reg
+    return sign_with({"registry_hash": crypto.sha256_tagged(canonicalize(reg)), "serial": serial, "signed_at": "2026-11-08T12:00:00Z",
+                      "signer": "owner:ops", "key": pub("owner:ops"), "comment": "add job-service"}, "signature", "owner:ops")
+
+
 def valid_fixtures() -> dict[str, dict[str, object]]:
     p = proposal()
     obs = envelope("adapter:ha@field-station", "observation.ha.state_changed", 48213,
@@ -309,6 +347,8 @@ def valid_fixtures() -> dict[str, dict[str, object]]:
         "verification": {"confirmed": verification()},
         "audit-record": {"chain": audit_chain()},
         "job": {"record": job(), "submission": job(submission=True)},
+        "registry": {"two-site": registry()},
+        "registry-signature": {"ops": registry_signature()},
     }
 
 
@@ -353,7 +393,7 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
     m = v["manifest"]["agent-field-station"]
     case(M, "reads-other-store", "only events: and api: references", "reads_from", m, setp(["data", "reads_from"], ["sqlite:/data/job-service.db"]))
     case(M, "kind-mismatch", "kind matches the component_id prefix", "component_id", m, setp(["kind"], "svc"))
-    case(M, "contract-not-satisfiable", "contract ranges must admit this spec", "does not admit spec 0.1.0", m, setp(["contracts", "envelope"], "^1"))
+    case(M, "contract-not-satisfiable", "contract ranges must admit this spec", "does not admit spec", m, setp(["contracts", "envelope"], "^1"))
     case(M, "actions-without-lifecycle", "proposing actions needs the action-lifecycle contract", "requires the action-lifecycle contract", m, setp(["contracts", "action-lifecycle"], DELETE))
     case(M, "self-dependency", "no self dependency", "depends on itself", m, setp(["dependencies"], ["agent:field-station@field-station"]))
     case(M, "unknown-field", "manifests are closed to catch typos", "Additional properties", m, setp(["reads_form"], []))
@@ -434,6 +474,25 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
     case("job", "bad-traceparent", "W3C traceparent", "traceparent", job(True), setp(["traceparent"], "abc"))
     case("log-record", "unknown-level", "four levels", "'trace' is not one of", v["log-record"]["info"], setp(["level"], "trace"))
     case("cell-status", "missing-registry-hash", "cells report which registry they enforce", "'registry_hash' is a required property", v["cell-status"]["field-station"], setp(["registry_hash"], DELETE))
+    reg = v["registry"]["two-site"]
+    case("registry", "ops-added-without-root", "only root changes owners", "root signature does not verify", reg,
+         lambda o: o["owners"]["ops"].append({"key": pub("adapter:ha"), "expires": "2027-01-01T00:00:00Z"}))
+    case("registry", "shared-key", "one key, one identity", "key already used by", reg,
+         setp(["components", "svc:job-service", "public_key"], pub("cell:home-hub")))
+    case("registry", "unknown-cell", "components run on listed cells", "is not a node of this registry", reg,
+         setp(["components", "svc:job-service", "cells"], ["gpu-pc"]))
+    case("registry", "revoked-still-listed", "revoked identities stay out", "is revoked but still listed", reg,
+         setp(["revoked", 0, "id"], "svc:job-service"))
+    case("registry", "unknown-section", "closed at the top level", "Additional properties", reg, setp(["grants"], {}))
+    case("registry", "node-without-key", "every cell has a key", "'public_key' is a required property", reg,
+         setp(["nodes", "home-hub", "public_key"], DELETE))
+    case("registry", "unknown-site", "nodes are on listed sites", "is not in sites", reg, setp(["nodes", "home-hub", "site"], "moon"))
+    case("registry", "double-hyphen-name", "cell names use single hyphens", "home--hub", reg,
+         setp(["nodes", "home--hub"], {"site": "home", "public_key": pub("svc:verifier")}))
+    rs = v["registry-signature"]["ops"]
+    case("registry-signature", "tampered-serial", "serial is signed", "signature does not verify", rs, setp(["serial"], 99))
+    case("registry-signature", "serial-zero", "serials start at 1", "less than the minimum", rs, setp(["serial"], 0))
+    case("registry-signature", "agent-signer", "only owners sign registries", "signer", rs, setp(["signer"], "agent:field-station"))
     case("decision-request", "missing-now", "policy needs the time", "'now' is a required property", v["decision-request"]["climate-factor"], setp(["context", "now"], DELETE))
     return out
 

@@ -4,6 +4,7 @@
 //	autonomy-core canonicalize < value.json
 //	autonomy-core make --seed HEX --source cell:x --type health.heartbeat --data '{}' --seq 1 [--ttl 180] [--now T]
 //	autonomy-core verify --keys keys.json [--now T] < envelope.json   # prints the source, or "reject: <reason>" and exits 1
+//	autonomy-core verify-registry --registry r.json --signature r.sig.json [--root KEY] [--previous p.sig.json] [--now T]
 package main
 
 import (
@@ -65,6 +66,26 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(src)
+	case "verify-registry":
+		fs := flag.NewFlagSet("verify-registry", flag.ExitOnError)
+		regPath := fs.String("registry", "", "")
+		sigPath := fs.String("signature", "", "")
+		root := fs.String("root", "", "pinned root key")
+		prevPath := fs.String("previous", "", "signature of the registry held")
+		now := fs.String("now", "", "RFC 3339")
+		check(fs.Parse(os.Args[2:]))
+		doc := readObjectFile(*regPath)
+		sig := readObjectFile(*sigPath)
+		var prev map[string]any
+		if *prevPath != "" {
+			prev = readObjectFile(*prevPath)
+		}
+		reg, err := core.VerifyRegistry(doc, sig, *root, prev, parseNow(*now))
+		if err != nil {
+			fmt.Println("reject:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("serial %d %s %s\n", reg.Serial, reg.Signer, reg.Hash)
 	default:
 		fail("unknown command " + os.Args[1])
 	}
@@ -83,6 +104,14 @@ func loadKeys(path string) *core.KeyRing {
 	ring, err := core.NewKeyRing(m)
 	check(err)
 	return ring
+}
+
+func readObjectFile(path string) map[string]any {
+	data, err := os.ReadFile(path)
+	check(err)
+	obj, err := core.DecodeObject(data)
+	check(err)
+	return obj
 }
 
 func parseNow(s string) time.Time {

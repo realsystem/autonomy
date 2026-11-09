@@ -194,6 +194,53 @@ def _audit_record(rec: dict, where: str, ctx: Context) -> Iterable[Finding]:
         yield Finding("error", f"{where}.prev_hash", "the first record (seq 0) must have the genesis prev_hash")
 
 
+def _registry(r: dict, where: str, ctx: Context) -> Iterable[Finding]:
+    owners = r["owners"]
+    reason = crypto.verify_with_key(owners, "signature", owners["root"])
+    if reason:
+        yield Finding("error", f"{where}.owners.signature", f"root {reason}")
+    seen: dict[bytes, str] = {}
+
+    def claim(text: str, who: str, path: str) -> Iterable[Finding]:
+        raw = crypto.key_bytes(text)
+        if raw is None:
+            yield Finding("error", path, "not an Ed25519 public key")
+        elif raw in seen:
+            yield Finding("error", path, f"key already used by {seen[raw]}")
+        else:
+            seen[raw] = who
+
+    yield from claim(owners["root"], "owner:root", f"{where}.owners.root")
+    for i, op in enumerate(owners["ops"]):
+        yield from claim(op["key"], "owner:ops", f"{where}.owners.ops[{i}].key")
+    for name, node in r["nodes"].items():
+        yield from claim(node["public_key"], f"cell:{name}", f"{where}.nodes.{name}.public_key")
+    for cid, comp in r.get("components", {}).items():
+        yield from claim(comp["public_key"], cid, f"{where}.components.{cid}.public_key")
+        for cell in comp["cells"]:
+            if cell not in r["nodes"]:
+                yield Finding("error", f"{where}.components.{cid}.cells", f"{cell} is not a node of this registry")
+        for name, rng in comp.get("contracts", {}).items():
+            if name in CONTRACTS and not range_admits(rng, SPEC_VERSION):
+                yield Finding("error", f"{where}.components.{cid}.contracts.{name}", f"range {rng} does not admit spec {SPEC_VERSION}")
+    present = {f"cell:{n}" for n in r["nodes"]} | set(r.get("components", {}))
+    for i, rev in enumerate(r.get("revoked", [])):
+        if rev["id"].split("@")[0] in present:
+            yield Finding("error", f"{where}.revoked[{i}].id", f"{rev['id']} is revoked but still listed")
+        raw = crypto.key_bytes(rev["key"])
+        if raw is not None and raw in seen:
+            yield Finding("error", f"{where}.revoked[{i}].key", f"revoked key is still used by {seen[raw]}")
+    for name, node in r["nodes"].items():
+        if node["site"] not in r.get("sites", {node["site"]: None}):
+            yield Finding("error", f"{where}.nodes.{name}.site", f"site {node['site']} is not in sites")
+
+
+def _registry_signature(s: dict, where: str, ctx: Context) -> Iterable[Finding]:
+    reason = crypto.verify_with_key(s, "signature", s["key"])
+    if reason:
+        yield Finding("error", f"{where}.signature", reason)
+
+
 RULES: dict[str, Callable[[dict, str, Context], Iterable[Finding]]] = {
     "manifest": _manifest,
     "envelope": _envelope,
@@ -203,6 +250,8 @@ RULES: dict[str, Callable[[dict, str, Context], Iterable[Finding]]] = {
     "action-request": _action_request,
     "execution-record": _execution_record,
     "audit-record": _audit_record,
+    "registry": _registry,
+    "registry-signature": _registry_signature,
 }
 
 
