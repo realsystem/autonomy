@@ -1,6 +1,6 @@
 {
   "description": "contract ranges must admit this spec",
-  "expect": "does not admit spec 0.1.0",
+  "expect": "does not admit spec",
   "instance": {
     "$schema": "https://autonomy.local/spec/v0/manifest.schema.json",
     "component_id": "agent:field-station",

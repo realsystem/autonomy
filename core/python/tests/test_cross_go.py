@@ -117,3 +117,33 @@ def test_go_envelope_verified_by_python(go_tool):
     assert ac.verify_envelope(env, keys, now=ac.parse_rfc3339(NOW)) == "svc:job-service"
     with pytest.raises(ac.Reject, match="expired"):
         ac.verify_envelope(env, keys, now=ac.parse_rfc3339(NOW) + 61)
+
+
+def test_registry_signed_in_python_verified_by_go(go_tool, tmp_path):
+    doc = json.loads((SPEC / "fixtures" / "v0" / "registry" / "valid" / "two-site.json").read_text())
+    keys = json.loads(TEST_KEYS.read_text())
+    ops = ac.private_key_from_seed(bytes.fromhex(SEEDS["owner:ops"]))
+    doc["nodes"]["home-hub"]["roles"].append("agent")  # a change Go must hash identically
+    sig = ac.sign_registry(doc, ops, serial=5, now=ac.parse_rfc3339(NOW) - 60)
+    (tmp_path / "r.json").write_text(json.dumps(doc, ensure_ascii=False))
+    (tmp_path / "r.sig.json").write_text(json.dumps(sig))
+    args = [
+        "verify-registry",
+        "--registry",
+        str(tmp_path / "r.json"),
+        "--signature",
+        str(tmp_path / "r.sig.json"),
+        "--root",
+        keys["public"]["owner:root"],
+        "--now",
+        NOW,
+    ]
+    ok = run(go_tool, *args)
+    assert ok.returncode == 0 and ok.stdout.split() == ["serial", "5", "owner:ops", sig["registry_hash"]], (
+        ok.stdout + ok.stderr
+    )
+    (tmp_path / "p.sig.json").write_text(json.dumps({**sig, "serial": 6}))
+    assert "rollback" in run(go_tool, *args, "--previous", str(tmp_path / "p.sig.json")).stdout
+    doc["nodes"]["home-hub"]["roles"].append("archive2")
+    (tmp_path / "r.json").write_text(json.dumps(doc))
+    assert "registry hash mismatch" in run(go_tool, *args).stdout

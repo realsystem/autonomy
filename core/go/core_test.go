@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -295,5 +296,51 @@ func TestTimesAndIDs(t *testing.T) {
 	}
 	if tp := NewTraceparent(); len(tp) != 55 || !strings.HasPrefix(tp, "00-") {
 		t.Error(tp)
+	}
+}
+
+func TestRegistryFixtures(t *testing.T) {
+	_, seeds := testKeys(t)
+	keys := readObject(t, filepath.Join(spec, "fixtures", "keys", "test-keys.json"))["public"].(map[string]any)
+	root := keys["owner:root"].(string)
+	doc := readObject(t, filepath.Join(spec, "fixtures", "v0", "registry", "valid", "two-site.json"))
+	sig := readObject(t, filepath.Join(spec, "fixtures", "v0", "registry-signature", "valid", "ops.json"))
+	now, _ := ParseTime("2026-11-08T12:30:00Z")
+	reg, err := VerifyRegistry(doc, sig, root, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reg.Serial != 1 || reg.Signer != "owner:ops" || len(reg.CellKeys) != 2 || len(reg.Components) != 2 {
+		t.Fatalf("unexpected %+v", reg)
+	}
+	ring := reg.KeyRing("field-station")
+	if ring.Get("agent:field-station") == nil || ring.Get("svc:job-service") != nil || ring.Get("cell:home-hub") == nil {
+		t.Error("key ring by cell")
+	}
+	if _, err := VerifyRegistry(doc, sig, keys["owner:ops"].(string), nil, now); reason(err) != "untrusted root" {
+		t.Errorf("pinned root: %v", err)
+	}
+	if _, err := VerifyRegistry(doc, sig, root, map[string]any{"serial": json.Number("2")}, now); reason(err) != "rollback" {
+		t.Errorf("rollback: %v", err)
+	}
+	ops := keyFor(t, seeds, "owner:ops")
+	for name, want := range map[string]string{
+		"ops-added-without-root": "bad owners signature", "shared-key": "invalid registry",
+		"unknown-cell": "invalid registry", "revoked-still-listed": "invalid registry",
+		"unknown-site": "invalid registry", "double-hyphen-name": "invalid registry",
+	} {
+		bad := readObject(t, filepath.Join(spec, "fixtures", "v0", "registry", "invalid", name+".json"))["instance"].(map[string]any)
+		h, _ := RegistryHash(bad)
+		s := map[string]any{"registry_hash": h, "serial": int64(1), "signed_at": "2026-11-08T12:00:00Z", "signer": "owner:ops", "key": EncodePublicKey(ops.Public().(ed25519.PublicKey))}
+		if err := SignObject(s, "registry-signature", ops); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := VerifyRegistry(bad, s, root, nil, now); reason(err) != want {
+			t.Errorf("%s: got %q want %q", name, reason(err), want)
+		}
+	}
+	tampered := readObject(t, filepath.Join(spec, "fixtures", "v0", "registry-signature", "invalid", "tampered-serial.json"))["instance"].(map[string]any)
+	if _, err := VerifyRegistry(doc, tampered, root, nil, now); reason(err) != "bad signature" {
+		t.Errorf("tampered: %v", err)
 	}
 }

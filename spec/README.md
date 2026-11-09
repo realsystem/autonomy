@@ -1,6 +1,6 @@
-# Autonomy contracts — `spec` v0.1.0
+# Autonomy contracts — `spec` v0.2.0
 
-**Status:** v0.1.0 draft (milestone M1, component C01) · 2026-11-06 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
+**Status:** v0.2.0 draft (M1 contracts, M3 registry) · 2026-11-08 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
 
 A component joins Autonomy by passing these schemas and rules in its own CI — no core component is modified.
 
@@ -29,6 +29,7 @@ A component joins Autonomy by passing these schemas and rules in its own CI — 
 | `action-lifecycle` | `grant`, `action-proposal`, `evaluation`, `decision-request`, `decision`, `approval`, `action-request`, `execution-record`, `verification` | §8 |
 | `audit` | `audit-record` | §9 |
 | `job` | `job` | §10 |
+| `registry` | `registry`, `registry-signature` | C03, [distributed-runtime §2](../design/distributed-runtime.md#2-node-identity-and-enrollment) |
 
 ## Use it in a component's CI
 
@@ -74,19 +75,29 @@ All of these operate on the **RFC 8785 (JCS) canonical JSON** of the object — 
 | ExecutionRecord | `signature` | `executor` | same |
 | Verification | `signature` | `verifier` | same |
 | Audit record | `signature` | `actor` | same (so it covers `hash`) |
+| Registry `owners` | `signature` | `owners.root` | `JCS(owners without signature)` — only root changes the owners |
+| Registry signature (detached, `<name>.sig.json`) | `signature` | `key` (role in `signer`) | `JCS(signature document without signature)`; it binds `registry_hash` = `sha256(JCS(registry))` and `serial` |
 
 - **`params_hash`** = `sha256(JCS(proposal.action))`, i.e. over `{"type", "target", "params"}`. Decisions and approvals carry it; C06 recomputes it from the proposal in the `ActionRequest`.
 - **Audit `hash`** = `sha256(UTF-8(prev_hash) ‖ JCS(record without hash and signature))`, where `prev_hash` is the full `sha256:<hex>` string. The first record of a cell's chain has `seq` 0 and `prev_hash` `sha256:` followed by 64 zeros. Each next record has `seq + 1` and the previous `hash`.
+
+### Registry rules
+
+A cell accepts a registry when, in this order: the document is consistent (one key per identity across owners, nodes and components; every component's `cells` are nodes; revoked ids and keys are absent; nodes on listed sites); `registry_hash` matches; `owners.root` equals the root key the cell pinned (the first accepted registry pins it); root's `owners.signature` verifies; the detached signature is by `owner:root` with `owners.root`, or by `owner:ops` with a listed ops key whose `expires` is after `signed_at`; and `serial` is above the one held (equal only for the same document). Otherwise the cell keeps the last valid registry. Reasons are stable phrases shared by the Python and Go libraries: `invalid registry`, `registry hash mismatch`, `untrusted root`, `bad owners signature`, `unknown signing key`, `ops key expired`, `bad signature`, `rollback`, `serial conflict`.
+
+Cells are given the exact JSON that was signed (`autonomy registry sign` writes `<name>.json` next to `<name>.sig.json`), never a re-read YAML copy: YAML timestamps and booleans would change the hash.
 
 ### What the CLI checks beyond the schemas
 
 Envelope: unique `(source, seq)` and `(source, id)` across samples; `expires` after `time`; `type` ↔ `dataschema` agreement; taint — a proposal with any `untrusted` input must travel in an envelope with `trust: untrusted`. Manifest: contract ranges admit this spec version; no self-dependency; no duplicate provided capability; `proposes_actions` requires `action-lifecycle`. Grant: window and `value_range` order; never granted to the owner. ActionRequest: decision is for this proposal and binds its `params_hash`; approval is for this decision with the same `params_hash`; one `idempotency_key`. Audit: `hash` correct; genesis; chain continuity. Decision/approval/grant/execution: time order. Signatures, nested ones included, when keys are given.
 
+Registry: root signature over `owners`, unique keys, components on listed nodes, revoked identities absent, nodes on listed sites. Registry signature: verifies with its own `key` (pairing with a document and the serial rules are the core library's job).
+
 Schemas themselves enforce, among others: R3 is never grantable; unknown grant constraints and unknown decision obligations fail; `require_approval` carries an approval obligation and needs an approval to execute; `deny` cannot be executed; an evaluation is `ok` only if every check passed (advisory LLM checks can only escalate or reject, ADR-008); failed health checks state their `impact`; `validation.*` and `policy.*` errors are not retryable; manifests may read only `events:` and `api:` sources.
 
 ### Closed and open schemas
 
-Documents a component **acts on with authority** are closed (`additionalProperties: false`) so an unknown field fails instead of being silently ignored: `manifest`, `grant`, `action-proposal`, `decision-request`, `decision`, `approval`, `action-request`, `error`. Reports and events are open, and consumers ignore unknown fields: `envelope`, `health`, `ready`, `cell-status`, `log-record`, `evaluation`, `execution-record`, `verification`, `audit-record`, `job`.
+Documents a component **acts on with authority** are closed (`additionalProperties: false`) so an unknown field fails instead of being silently ignored: `manifest`, `registry` (top level; node entries carry edge_server settings), `registry-signature`, `grant`, `action-proposal`, `decision-request`, `decision`, `approval`, `action-request`, `error`. Reports and events are open, and consumers ignore unknown fields: `envelope`, `health`, `ready`, `cell-status`, `log-record`, `evaluation`, `execution-record`, `verification`, `audit-record`, `job`.
 
 For a closed schema, a field added in a MINOR release may only be sent once the receiving component's manifest declares that MINOR (the registry knows both ranges).
 

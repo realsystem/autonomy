@@ -2,6 +2,14 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
+## 0.2.0 — unreleased (M3)
+
+Backward compatible with 0.1 (`compat` reports only additions).
+
+- New schemas `registry` and `registry-signature` (contract name `registry`): owner keys with root-signed delegation of ops keys, cells (edge_server fleet nodes), components with key, version, manifest hash and cells, revocations; detached signature with `serial` for rollback protection.
+- Conformance rules for both; fixtures (valid two-site registry, 11 invalid cases).
+- Test key `cell:home-hub` added.
+
 ## 0.1.0 — 2026-11-08 (M1)
 
 First frozen contracts.

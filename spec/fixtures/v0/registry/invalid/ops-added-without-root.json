@@ -1,0 +1,94 @@
+{
+  "description": "only root changes owners",
+  "expect": "root signature does not verify",
+  "instance": {
+    "registry_format": 1,
+    "schema_version": 1,
+    "fleet": {
+      "name": "farm",
+      "telegram": {
+        "operators": [
+          100000001
+        ]
+      },
+      "alert_order": [
+        "home-hub",
+        "field-station"
+      ]
+    },
+    "sites": {
+      "remote": {
+        "timezone": "UTC"
+      },
+      "home": null
+    },
+    "owners": {
+      "root": "ed25519:rJu6Ds4dzbYLuIlqbeUarZ4oyyKqxLWcW450zg4Arg4",
+      "ops": [
+        {
+          "key": "ed25519:rS59uDpD57fOra4899EXOPFJT3YHih2aMHP58HCik5M",
+          "expires": "2027-11-08T00:00:00Z",
+          "comment": "laptop"
+        },
+        {
+          "key": "ed25519:tlzvhdZQ7tiZV4PR-XCldZwowxHrSGkeNFFDYG-x-9s",
+          "expires": "2027-01-01T00:00:00Z"
+        }
+      ],
+      "signature": "ed25519:lUWPXVqpfbxckxqjVzQVO1BsTbH0ae5PLb-DYjvrTo47fI7Km2Gdz6EanfTDW3p8lOHHy9px4sBXSheaOqnFBQ"
+    },
+    "nodes": {
+      "field-station": {
+        "site": "remote",
+        "packaging": "ha-addon",
+        "roles": [
+          "ha"
+        ],
+        "public_key": "ed25519:O1oYsIk31etqz-XTIIMWKWj1N8sDuEtA9_oZ-cLsres",
+        "tailscale": "field-station"
+      },
+      "home-hub": {
+        "site": "home",
+        "packaging": "host",
+        "roles": [
+          "nvr",
+          "archive"
+        ],
+        "public_key": "ed25519:NPTuWzxRUhzag-FjQ2p_OAwntiXEAZnsE_RC2xxVBlM",
+        "tailscale": "home-hub"
+      }
+    },
+    "components": {
+      "agent:field-station": {
+        "public_key": "ed25519:L7qRi8K_zt4aGSvZAz50TLYJuYOtMqhVJt06eByWPXc",
+        "version": "0.5.0",
+        "manifest_hash": "sha256:3d5581714ef72003feed7c9e08662076d3618fd83d18f6b6668891d4bb2c3813",
+        "cells": [
+          "field-station"
+        ],
+        "contracts": {
+          "envelope": "^0.1",
+          "health": "^0.1",
+          "action-lifecycle": "^0.1",
+          "audit": "^0.1"
+        }
+      },
+      "svc:job-service": {
+        "public_key": "ed25519:cbcbYbkHgMqEjsDVQN0IxJWUQXemjIVEMGNV-8g7FDY",
+        "version": "2.0.0",
+        "manifest_hash": "sha256:28dd9e02043db56dd6d8dbbab6d1157315a4a55558fcd89c70ae1d77a677f62a",
+        "cells": [
+          "home-hub"
+        ]
+      }
+    },
+    "revoked": [
+      {
+        "id": "adapter:old-ha",
+        "key": "ed25519:LZrCubm0rptuRMbS5pXEeFT-blpNTFWZKvQwR7aSrbw",
+        "revoked_at": "2026-11-01T00:00:00Z",
+        "reason": "replaced by adapter:ha"
+      }
+    ]
+  }
+}

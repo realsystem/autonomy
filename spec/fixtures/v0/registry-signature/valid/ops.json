@@ -1,0 +1,9 @@
+{
+  "registry_hash": "sha256:95a3bc7ead7eb73ae5062815adb1a4023d21fae95bc68c496b472a996d054254",
+  "serial": 1,
+  "signed_at": "2026-11-08T12:00:00Z",
+  "signer": "owner:ops",
+  "key": "ed25519:rS59uDpD57fOra4899EXOPFJT3YHih2aMHP58HCik5M",
+  "comment": "add job-service",
+  "signature": "ed25519:k4cIlJ7U7s6lM0L8D1r44ogicaYMH8AsgTL-btP1Woj9-QZWhbMbhlKB24eqSWgS9vrjUp_n1GUZQhIwie1sDg"
+}
