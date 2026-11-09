@@ -1,0 +1,14 @@
+{
+  "description": "suspend, hold or resume",
+  "expect": "'pause' is not one of",
+  "instance": {
+    "order_id": "ord_01JC9Q4000000000000000HOLD",
+    "kind": "pause",
+    "scope": "all",
+    "reason": "owner on holiday; nothing automatic",
+    "issued_by": "owner:ops",
+    "attested_by": "svc:approval@field-station",
+    "issued_at": "2026-11-09T19:00:00Z",
+    "signature": "ed25519:d0KQtxX7NfDSSnjT8b7ubKlMs3Xcy3QOXobk4tqYEytH97xiDVBljJOyTFUefGU02WF-4gfpADtpE2o7cVYXDQ"
+  }
+}

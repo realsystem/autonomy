@@ -1,0 +1,10 @@
+{
+  "order_id": "ord_01JC9Q4000000000000000SUSP",
+  "kind": "suspend",
+  "scope": "agent:field-station",
+  "reason": "owner on holiday; nothing automatic",
+  "issued_by": "owner:ops",
+  "attested_by": "svc:approval@field-station",
+  "issued_at": "2026-11-09T19:00:00Z",
+  "signature": "ed25519:Fc7v6spAYjU0hvwLSFzYx4p4-tewW3FIp5mkcSIVyQCNSCkgVRv1GJUoJk1KqIY0AiDoHFIniILYU-tbF4_mDg"
+}

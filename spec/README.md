@@ -1,6 +1,6 @@
-# Autonomy contracts — `spec` v0.3.0
+# Autonomy contracts — `spec` v0.4.0
 
-**Status:** v0.3.0 draft (M1 contracts, M3 registry, M5 policy bundle) · 2026-11-08 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
+**Status:** v0.3.0 draft (M1 contracts, M3 registry, M5 policy bundle, M6 approvals and control orders) · 2026-11-08 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
 
 A component joins Autonomy by passing these schemas and rules in its own CI — no core component is modified.
 
@@ -26,7 +26,7 @@ A component joins Autonomy by passing these schemas and rules in its own CI — 
 | `health` | `health` (liveness and `health.reported` data), `ready`, `cell-status` | §4 |
 | `error` | `error` | §7 |
 | `logging` | `log-record` | §6 |
-| `action-lifecycle` | `grant`, `policy-bundle`, `action-proposal`, `evaluation`, `decision-request`, `decision`, `approval`, `action-request`, `execution-record`, `verification` | §8 |
+| `action-lifecycle` | `grant`, `policy-bundle`, `action-proposal`, `evaluation`, `decision-request`, `decision`, `approval`, `control-order`, `action-request`, `execution-record`, `verification` | §8 |
 | `audit` | `audit-record` | §9 |
 | `job` | `job` | §10 |
 | `registry` | `registry`, `registry-signature` | C03, [distributed-runtime §2](../design/distributed-runtime.md#2-node-identity-and-enrollment) |
@@ -71,7 +71,8 @@ All of these operate on the **RFC 8785 (JCS) canonical JSON** of the object — 
 | Envelope | `autonomysig` | `source` | `JCS(envelope without autonomysig)` — includes `data` |
 | Grant | `signature` | `issued_by` | `JCS(object without signature)` |
 | Decision | `signature` | `issuer` | same |
-| Approval | `signature` | `approver` | same |
+| Approval | `signature` | `approver`, or `attested_by` when the approval service (C05) signed after verifying the owner | same |
+| Control order | `signature` | `issued_by`, or `attested_by` | same |
 | ExecutionRecord | `signature` | `executor` | same |
 | Verification | `signature` | `verifier` | same |
 | Audit record | `signature` | `actor` | same (so it covers `hash`) |

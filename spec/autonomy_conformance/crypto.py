@@ -30,7 +30,11 @@ SIGNED = {
     "execution-record": ("signature", "executor"),
     "verification": ("signature", "verifier"),
     "audit-record": ("signature", "actor"),
+    "control-order": ("signature", "issued_by"),
 }
+
+# Kinds an approval service may sign on the owner's behalf: attested_by is then the signer.
+ATTESTED = {"approval", "control-order"}
 
 
 def b64url_decode(s: str) -> bytes:
@@ -111,6 +115,8 @@ def verify(obj: Mapping[str, Any], kind: str, keys: Mapping[str, str]) -> str | 
         return "the 'cryptography' package is required to verify signatures"
 
     sig_field, signer_field = SIGNED[kind]
+    if kind in ATTESTED and isinstance(obj.get("attested_by"), str):
+        signer_field = "attested_by"
     signer = obj.get(signer_field)
     sig = obj.get(sig_field)
     if not isinstance(signer, str) or not isinstance(sig, str):

@@ -11,7 +11,8 @@
     "svc:pdp": "ed25519:oT-kFoAeqv4vjQ-KCFadSgbjSx2C0KYdFcVgKvCpCQs",
     "svc:action-gateway": "ed25519:b-w21ZCAXFEqxx3Qe_grVwMazkB0nDkUUjhbF9AynhM",
     "svc:verifier": "ed25519:SYMjaGFTxYiKWRnH17MpO0wWsnoIhPUtMyHHWN3FoJc",
-    "svc:job-service": "ed25519:cbcbYbkHgMqEjsDVQN0IxJWUQXemjIVEMGNV-8g7FDY"
+    "svc:job-service": "ed25519:cbcbYbkHgMqEjsDVQN0IxJWUQXemjIVEMGNV-8g7FDY",
+    "svc:approval": "ed25519:7ZjFGJHYa8wk9_zMIiqVxnPk7p1Rl2AJi2HlKfTZAaE"
   },
   "private_seed_hex": {
     "owner:root": "bd7ee917ad9e8c8565761aa7bca21c6f4e19a43450324e1700996910ad7f47bd",
@@ -24,6 +25,7 @@
     "svc:pdp": "318d2d5babb85aeb1e57db4dbcecc94fcfc5c42add60a96e4af6816682bf399f",
     "svc:action-gateway": "32dc8d5eaf529399fecdaf581189218d2d1b36fb7a3a1df9a55e84389fa03ceb",
     "svc:verifier": "dd60c6089cf7f17a163c04790f83434f6773c71d844d4d08cf48f88f57264060",
-    "svc:job-service": "32adc09ccdb5a2e55e7301658f0b5e27d73dd1d278f4dd35ffb88f591e46f034"
+    "svc:job-service": "32adc09ccdb5a2e55e7301658f0b5e27d73dd1d278f4dd35ffb88f591e46f034",
+    "svc:approval": "58a32c72d41540482d3e264101c0fb6d8da596e6b09c9741c520241c92d78a3b"
   }
 }

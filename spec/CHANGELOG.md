@@ -2,6 +2,13 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
+## 0.4.0 — unreleased (M6)
+
+Backward compatible with 0.3.
+
+- `approval.attested_by` (optional): the approval service that verified the owner and signed.
+- New schema `control-order` (`suspend`, `hold`, `resume`; scope `all`, a cell or a component); event types `system.suspended` / `system.resumed` carry it.
+
 ## 0.3.0 — unreleased (M5)
 
 Backward compatible with 0.2.

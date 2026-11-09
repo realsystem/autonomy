@@ -36,7 +36,7 @@ from autonomy_conformance.schemas import BASE_URI  # noqa: E402
 SIGNERS = [
     "owner:root", "owner:ops",
     "cell:field-station", "cell:home-hub", "agent:field-station", "adapter:ha",
-    "svc:evaluator", "svc:pdp", "svc:action-gateway", "svc:verifier", "svc:job-service",
+    "svc:evaluator", "svc:pdp", "svc:action-gateway", "svc:verifier", "svc:job-service", "svc:approval",
 ]
 CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 T0 = "2026-11-06T18:20:11Z"
@@ -327,6 +327,23 @@ def policy_bundle() -> dict:
     }, "signature", "owner:ops")
 
 
+def attested_approval() -> dict:
+    d = decision("require_approval")
+    return sign_with({
+        "approval_id": "apr_01JC9Q40000000000000000002", "decision_id": d["decision_id"], "params_hash": d["params_hash"],
+        "approver": "owner:ops", "attested_by": "svc:approval@field-station", "method": "telegram_totp",
+        "approved_at": "2026-11-06T18:31:02Z", "expires": "2026-11-06T18:46:02Z",
+    }, "signature", "svc:approval")
+
+
+def control_order(kind: str = "hold", scope: str = "all") -> dict:
+    return sign_with({
+        "order_id": f"ord_01JC9Q4000000000000000{kind.upper()[:4]}", "kind": kind, "scope": scope,
+        "reason": "owner on holiday; nothing automatic", "issued_by": "owner:ops",
+        "attested_by": "svc:approval@field-station", "issued_at": "2026-11-09T19:00:00Z",
+    }, "signature", "svc:approval")
+
+
 def valid_fixtures() -> dict[str, dict[str, object]]:
     p = proposal()
     obs = envelope("adapter:ha@field-station", "observation.ha.state_changed", 48213,
@@ -358,7 +375,9 @@ def valid_fixtures() -> dict[str, dict[str, object]]:
         "evaluation": {"ok": evaluation(), "escalate": evaluation_escalate()},
         "decision-request": {"climate-factor": decision_request()},
         "decision": {"permit": decision("permit"), "require-approval": decision("require_approval"), "deny": decision("deny")},
-        "approval": {"telegram": approval()},
+        "approval": {"telegram": approval(), "attested": attested_approval()},
+        "control-order": {"hold-all": control_order(), "suspend-agent": control_order("suspend", "agent:field-station"),
+                          "resume": control_order("resume", "all")},
         "action-request": {"permit": action_request(), "approved": action_request(with_approval=True)},
         "execution-record": {"succeeded": execution_record(), "rejected": execution_record("rejected")},
         "verification": {"confirmed": verification()},
@@ -517,6 +536,12 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
          setp(["policies", 2, "cedar"], 'forbid (principal, action, resource) when { false };\npermit (principal, action, resource);'), None)
     case("policy-bundle", "bad-version", "YYYY.MM.DD-n", "bundle", pb, setp(["bundle"], "v2"))
     case("policy-bundle", "duplicate-policy", "policy ids are unique", "used twice", pb, lambda o: o["policies"].append(dict(o["policies"][0])))
+    case("approval", "attested-by-other-key", "attestation verifies with the attester's key", "does not verify",
+         v["approval"]["attested"], setp(["attested_by"], "svc:verifier@field-station"))
+    co = v["control-order"]["hold-all"]
+    case("control-order", "unknown-kind", "suspend, hold or resume", "'pause' is not one of", co, setp(["kind"], "pause"))
+    case("control-order", "bad-scope", "all, a cell or a component", "scope", co, setp(["scope"], "everything"))
+    case("control-order", "tampered-scope", "orders are signed", "does not verify", co, setp(["scope"], "agent:field-station"))
     case("decision-request", "missing-now", "policy needs the time", "'now' is a required property", v["decision-request"]["climate-factor"], setp(["context", "now"], DELETE))
     return out
 

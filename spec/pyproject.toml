@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autonomy-conformance"
-version = "0.3.0"
+version = "0.4.0"
 description = "Autonomy contracts (C01): JSON Schemas, fixtures and the conformance CLI"
 readme = "README.md"
 requires-python = ">=3.10"
