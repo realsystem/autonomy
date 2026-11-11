@@ -1,0 +1,9 @@
+# Copy to .sops.yaml in a repository that keeps encrypted configuration (ADR-013).
+# Recipients are age public keys: the owner's, and each cell that must read the file.
+# Check in CI: autonomy secrets check-sops path/to/*.enc.yaml
+creation_rules:
+  - path_regex: .*\.enc\.(yaml|json)$
+    age: >-
+      age1ownerxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
+      age1cellfieldstationxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    unencrypted_suffix: _unencrypted

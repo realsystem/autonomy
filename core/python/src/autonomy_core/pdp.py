@@ -22,6 +22,7 @@ without ``cedarpy`` fails closed: every decision is a deny.
 
 from __future__ import annotations
 
+import contextlib
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping
@@ -219,11 +220,13 @@ class Pdp:
         clock: Callable[[], float] = time.time,
         permit_ttl: float = 900.0,
         approval_ttl: float = 3600.0,
+        tracer: Any = None,
     ):
         self.issuer = issuer
         self.key = key
         self.bundle = bundle
         self.clock = clock
+        self.tracer = tracer
         self.permit_ttl = permit_ttl
         self.approval_ttl = approval_ttl
         self._cedar = cedar
@@ -377,10 +380,18 @@ class Pdp:
         """A signed Decision (spec decision schema). Raises Reject on a malformed request."""
         _check_request(req)
         now = self.clock()
-        try:
-            out = self.evaluate(req)
-        except Reject as why:  # engine unavailable: fail closed
-            out = Outcome("deny", [], str(why))
+        span = (
+            self.tracer.span("pdp.decide", None, **{"autonomy.action_type": str(req["action"])})
+            if self.tracer
+            else None
+        )
+        with span if span is not None else contextlib.nullcontext() as sp:
+            try:
+                out = self.evaluate(req)
+            except Reject as why:  # engine unavailable: fail closed
+                out = Outcome("deny", [], str(why))
+            if sp is not None:
+                sp.set(**{"autonomy.effect": out.effect, "autonomy.bundle": self.bundle.version})
         ctx = req["context"]
         action = {"type": req["action"], "target": req["resource"], "params": dict(ctx.get("params", {}))}
         obligations: list[dict[str, Any]] = []

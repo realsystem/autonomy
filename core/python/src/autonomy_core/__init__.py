@@ -53,6 +53,7 @@ from .registry import (
     verify_registry,
 )
 from .replay import Counter, SeenStore
+from .secrets import is_ref, register_provider, resolve, resolve_config, scan, scan_text
 from .signing import (
     GENESIS_HASH,
     audit_hash,
@@ -62,18 +63,27 @@ from .signing import (
     signing_input,
     verify_object,
 )
+from .telemetry import (
+    REDACTOR,
+    Redactor,
+    Tracer,
+    configure_logging,
+    correlation,
+    current_traceparent,
+    reconstruct,
+)
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 SPEC_VERSION = "0.4.0"  # the contracts version implemented
 
 __all__ = [
-    "ApprovalService",
-    "ControlState",
     "ActionGateway",
     "AdapterResult",
+    "ApprovalService",
     "AuditLog",
     "CanonicalizationError",
     "Component",
+    "ControlState",
     "Counter",
     "Freshness",
     "GENESIS_HASH",
@@ -83,17 +93,23 @@ __all__ = [
     "Pdp",
     "Policy",
     "PolicyBundle",
+    "REDACTOR",
+    "Redactor",
     "Registry",
     "RegistryStore",
     "Reject",
     "SPEC_VERSION",
     "SeenStore",
+    "Tracer",
     "audit_hash",
     "canonicalize",
     "check_document",
     "check_fresh",
     "check_structure",
     "child_traceparent",
+    "configure_logging",
+    "correlation",
+    "current_traceparent",
     "decision_request",
     "decode_public_key",
     "encode_public_key",
@@ -103,6 +119,7 @@ __all__ = [
     "is_component_ref",
     "is_envelope",
     "is_name",
+    "is_ref",
     "load_bundle",
     "load_private_key",
     "make_envelope",
@@ -114,9 +131,15 @@ __all__ = [
     "parse_rfc3339",
     "prefixed_id",
     "private_key_from_seed",
+    "reconstruct",
+    "register_provider",
     "registry_hash",
+    "resolve",
+    "resolve_config",
     "same_key",
     "save_private_key",
+    "scan",
+    "scan_text",
     "sha256_tagged",
     "sign",
     "sign_object",

@@ -2,6 +2,11 @@
 
 Python releases are tagged `core-vX.Y.Z`, Go releases `core/go/vX.Y.Z` ([ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)).
 
+## 0.5.0 — unreleased (M9)
+
+- Observability (C17): `configure_logging` (spec log-record JSON lines, trace and correlation ids from context), `Redactor` (registered values, secret-shaped text, secret field names), `Tracer` (OTLP/JSON span lines, `traceparent` propagation, offline), `reconstruct` (IT-71). Gateway and PDP emit spans; audit records carry `trace_id`; `gateway.execute(..., traceparent=, correlationid=)`.
+- Secrets (C18): `secret://env|file|sops|age|store/...` references, `resolve_config`, provider hook; resolved values are redacted everywhere. Scanner `scan` / `autonomy secrets scan` with an allowlist (IT-81). `autonomy trace` reconstructs a story.
+
 ## 0.4.0 — unreleased (M6)
 
 - `ApprovalService` (C05): approval requests for `require_approval` decisions; signed, attested approvals only for an allowed operator, in a private chat, with a valid code, before expiry (IT-12); requests survive restarts; `attest` for owner commands.

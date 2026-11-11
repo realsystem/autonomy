@@ -1,0 +1,16 @@
+# gitleaks configuration for CI (IT-81). Published test keys are expected.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "published test keys and the scanner's own examples"
+paths = [
+  '''spec/fixtures/keys/test-keys\.json''',
+  '''spec/vectors/signature/envelope\.json''',
+  '''core/python/src/autonomy_core/secrets\.py''',
+  '''core/python/src/autonomy_core/telemetry\.py''',
+  '''core/python/tests/test_telemetry_secrets\.py''',
+  '''core/python/tests/test_registry\.py''',
+]
+# Type names in keys.py (e.g. Ed25519PrivateKey) look like generic API keys.
+regexes = ['''Ed25519(Private|Public)Key''']
