@@ -174,6 +174,9 @@ wait_reply() { # pattern (lower case, | for alternatives) timeout_s
   done
   echo "--- no reply matching '$pat' in $t s. The bot said:" >&2
   "$EDGE/lab/lab.sh" replies 6 >&2 || true
+  echo "--- bot log:" >&2; docker logs --tail 25 telegram-bot >&2 2>&1 || true
+  echo "--- job service log (jobs):" >&2; docker logs --tail 400 "${LAB_PROJECT}-processor" 2>&1 | grep -v "worker/poll\|/health\|/stats" | tail -15 >&2 || true
+  echo "--- worker log:" >&2; docker logs --tail 15 "${LAB_PROJECT}-worker" >&2 2>&1 || true
   return 1
 }
 
