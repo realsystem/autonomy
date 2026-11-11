@@ -156,7 +156,7 @@ cmd_cam() { "$EDGE/lab/lab.sh" cam "$@"; }
 
 LAST_CODE=""
 fresh_code() { # a code the bot has not seen: wait for the next 30 s window if needed
-  local c i
+  local c
   for _ in $(seq 1 20); do
     c="$(cmd_code)"
     [ "$c" != "$LAST_CODE" ] && { LAST_CODE="$c"; echo "$c"; return 0; }
