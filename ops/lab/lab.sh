@@ -157,7 +157,7 @@ cmd_cam() { "$EDGE/lab/lab.sh" cam "$@"; }
 LAST_CODE=""
 fresh_code() { # a code the bot has not seen: wait for the next 30 s window if needed
   local c i
-  for i in $(seq 1 20); do
+  for _ in $(seq 1 20); do
     c="$(cmd_code)"
     [ "$c" != "$LAST_CODE" ] && { LAST_CODE="$c"; echo "$c"; return 0; }
     sleep 2
@@ -166,8 +166,8 @@ fresh_code() { # a code the bot has not seen: wait for the next 30 s window if n
 }
 
 wait_reply() { # pattern (lower case, | for alternatives) timeout_s
-  local pat="$1" t="${2:-60}" i out
-  for i in $(seq 1 $((t / 2))); do
+  local pat="$1" t="${2:-60}" out
+  for _ in $(seq 1 $((t / 2))); do
     out="$(tg GET /_lab/sent | tr '[:upper:]' '[:lower:]')"
     if grep -qE "$pat" <<< "$out"; then return 0; fi
     sleep 2
