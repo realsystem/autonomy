@@ -1,6 +1,6 @@
 # Autonomy lab: the whole system on a laptop
 
-Status: **Draft for review** · 2026-11-11
+Status: **Draft, decisions recorded (§9)** · 2026-11-11
 
 ## 1. Goal
 
@@ -141,7 +141,7 @@ By default, **your three working copies, including changes you haven't committed
 
 ## 6. Resources and platforms
 
-- **Platforms:** macOS (Docker Desktop or OrbStack) and Linux. Apple silicon builds arm64 images locally; processor's published images are amd64 only, which is another reason to build locally.
+- **Platforms:** macOS (the owner's laptop: Docker Desktop or OrbStack) and Linux (CI). Apple silicon builds arm64 images locally; processor's published images are amd64 only, which is another reason to build locally.
 - **Memory:** Frigate about 1 GB, the processor parts under 100 MB, the bot about 100 MB, mock-llm about 50 MB. The `farm` profile adds about 700 MB (Home Assistant). Total about 1.3 GB, or about 2 GB with `farm`.
 - **First run** about 5 minutes (image builds); later runs under a minute.
 
@@ -160,12 +160,12 @@ By default, **your three working copies, including changes you haven't committed
 - **No cloud models.** The lab's routing file contains only `mock-llm`; `lab.sh verify` fails if any other endpoint appears.
 - **`lab.sh down` never touches containers outside `LAB_PROJECT`.**
 
-## 9. Decisions for the owner
+## 9. Decisions (owner, 2026-11-11)
 
-1. **Laptop OS:** macOS or Linux? It affects only documentation and defaults; both will be supported.
-2. **One edge node or two?** Two nodes (two lab bots) would also exercise the fleet control plane (`/fleet`, signed node-to-node messages). The default proposed here is one, with `--nodes 2` optional.
-3. **`farm` profile on by default?** It adds about 700 MB and has little to test until M10. Proposed: off.
-4. **CI:** run `lab verify` on pull requests in all three repos, or only nightly? Proposed: on pull requests in autonomy, nightly in the other two.
+1. **Laptop: macOS** (Docker Desktop or OrbStack, Apple silicon). Documentation and defaults target macOS. The scripts keep the portable-bash rule, so Linux works too (it is what CI runs).
+2. **One edge node only.** One lab bot; no `--nodes` option. Fleet testing stays in edge_server's unit tests.
+3. **`farm` profile off by default**; `lab.sh up --farm` turns it on.
+4. **CI:** `lab verify` on pull requests in autonomy, nightly in processor and edge_server.
 
 ## 10. Build order once approved
 
