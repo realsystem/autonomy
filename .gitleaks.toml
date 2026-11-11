@@ -1,7 +1,5 @@
 # gitleaks configuration for CI (IT-81). Published test keys are expected.
 [extend]
-# Type names in keys.py (e.g. Ed25519PublicKey) look like generic API keys.
-regexes = ['''^Ed25519(Private|Public)Key$''']
 useDefault = true
 
 [allowlist]
@@ -14,3 +12,5 @@ paths = [
   '''core/python/tests/test_telemetry_secrets\.py''',
   '''core/python/tests/test_registry\.py''',
 ]
+# Type names in keys.py (e.g. Ed25519PrivateKey) look like generic API keys.
+regexes = ['''Ed25519(Private|Public)Key''']
