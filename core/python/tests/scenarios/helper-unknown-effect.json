@@ -1,0 +1,49 @@
+{
+  "name": "helper-unknown-effect",
+  "kind": "verification",
+  "action": {
+    "type": "ha.helper.set",
+    "target": "input_number.farm_irrigation_recommended_climate_factor",
+    "params": {
+      "value": 118
+    }
+  },
+  "expected_effect": {
+    "kind": "soil_wet_up",
+    "within_s": 30
+  },
+  "verification": {
+    "probe": "ha.state",
+    "independent": false
+  },
+  "reversibility": {
+    "undo": {
+      "type": "ha.helper.set",
+      "params": {
+        "value": "previous"
+      }
+    }
+  },
+  "record": {
+    "status": "succeeded",
+    "before": {
+      "value": 104
+    }
+  },
+  "probe": {
+    "name": "ha.state",
+    "independent": false,
+    "path": "ha.state"
+  },
+  "observations": [
+    {
+      "at_s": 5,
+      "value": 118
+    }
+  ],
+  "check_at_s": 40,
+  "expect": {
+    "result": "inconclusive"
+  },
+  "description": "Effect kinds the verifier does not know are inconclusive."
+}

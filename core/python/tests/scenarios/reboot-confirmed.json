@@ -1,0 +1,41 @@
+{
+  "name": "reboot-confirmed",
+  "kind": "verification",
+  "description": "The host's boot time is after the reboot was requested.",
+  "action": {
+    "type": "host.reboot",
+    "target": "edge-1",
+    "params": {}
+  },
+  "expected_effect": {
+    "kind": "restarted_after",
+    "entity": "host",
+    "within_s": 900
+  },
+  "verification": {
+    "probe": "host.boot_time",
+    "independent": true
+  },
+  "reversibility": {
+    "irreversible": true
+  },
+  "record": {
+    "status": "succeeded"
+  },
+  "probe": {
+    "name": "host.boot_time",
+    "independent": true,
+    "path": "host.boot_time"
+  },
+  "observations": [
+    {
+      "at_s": 120,
+      "value_s": 95
+    }
+  ],
+  "check_at_s": 130,
+  "expect": {
+    "result": "confirmed",
+    "independent": true
+  }
+}

@@ -17,9 +17,11 @@ The one implementation of what every component does at its boundary: canonical J
 | Outbox | `Outbox` (on disk) | — (M4, for `processor`) |
 | Audit | `AuditLog` (append, fsync), `verify_chain` | `VerifyChain` |
 | Registry | `verify_registry`, `RegistryStore`, `sign_registry`, `sign_owners`, `fingerprint` | `VerifyRegistry`, `CheckRegistryDocument`, `RegistryHash` |
+| Evaluation (C13) | `Evaluator`, `value_range`, `allowed_targets`, `Review` | — |
 | Policy decisions (C04) | `Pdp`, `PolicyBundle`, `load_bundle`, `decision_request`; Cedar via `cedarpy` | — |
 | Approvals and owner control (C05) | `ApprovalService`, `ControlState` | — |
 | Action Gateway (C06) | `ActionGateway`, `AdapterResult`, `MockAdapter` | — |
+| Verification (C14) | `Verifier`, `Probe`, `Observation`, `undo_proposal` | — |
 | Logs, traces, redaction (C17) | `configure_logging`, `Tracer`, `REDACTOR`, `correlation`, `reconstruct` | — |
 | Secrets (C18) | `resolve`, `resolve_config`, `register_provider`, `scan` | — |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
@@ -78,6 +80,23 @@ record = gateway.execute({"action_id": ..., "proposal": proposal, "decision": de
 ```
 
 Decision rules (R3 never; Cedar `forbid` wins; grant, policy, owner or R0 must permit; untrusted input, evaluator escalation or a level below the risk send it to the owner; `@approvable` policies give `require_approval`) are in the `pdp` module docstring; gateway checks in the `gateway` module docstring. Real Cedar is tested in CI (`policy engine (Cedar)` job).
+
+## Evaluate before, verify after
+
+```python
+evaluator = ac.Evaluator(invariants={"ha.helper.set": {"value_range": ac.value_range("value", 50, 150)}},
+                         open_proposals=lambda: in_flight, probes={"ha.state"}, reviewer=None, audit=audit)
+evaluation = evaluator.evaluate(proposal, risk_class="R1")          # ok | escalate | reject
+decision = pdp.decide(ac.decision_request(proposal, ..., evaluation=evaluation["outcome"]))
+record = gateway.execute(...)                                         # succeeded = adapter accepted
+
+verifier = ac.Verifier(verifier="svc:verifier@field-station", key=key, state_dir="/state/ver", audit=audit,
+                       probes={"ha.state": ac.Probe(read_ha_state, independent=False)},
+                       on_contradicted=lambda verification, undo: notify_owner(verification, undo))
+verifier.check_pending(gateway)   # call periodically: confirmed | contradicted | not_confirmed | inconclusive
+```
+
+Check order and outcomes are in the `evaluator` module docstring; results in the `verifier` docstring. A reviewer (`Review(verdict, note, model)`, an LLM hook) only ever escalates. `autonomy evaluate proposal.json --risk R1` and `autonomy verify proposal.json record.json --observations obs.json` run both over files; `core/python/tests/scenarios/` has recorded scenarios (ST-12: accepted zone run, no flow → `contradicted`).
 
 ## Logs, traces and secrets
 

@@ -1,0 +1,46 @@
+{
+  "name": "reboot-contradicted",
+  "kind": "verification",
+  "description": "The helper said ok but the host has been up for a day: it never rebooted.",
+  "action": {
+    "type": "host.reboot",
+    "target": "edge-1",
+    "params": {}
+  },
+  "expected_effect": {
+    "kind": "restarted_after",
+    "entity": "host",
+    "within_s": 900
+  },
+  "verification": {
+    "probe": "host.boot_time",
+    "independent": true
+  },
+  "reversibility": {
+    "irreversible": true
+  },
+  "record": {
+    "status": "succeeded"
+  },
+  "probe": {
+    "name": "host.boot_time",
+    "independent": true,
+    "path": "host.boot_time"
+  },
+  "observations": [
+    {
+      "at_s": 300,
+      "value_s": -86400
+    },
+    {
+      "at_s": 900,
+      "value_s": -86400
+    }
+  ],
+  "check_at_s": 901,
+  "expect": {
+    "result": "contradicted",
+    "independent": true,
+    "incident": true
+  }
+}

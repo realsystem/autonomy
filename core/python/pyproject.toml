@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autonomy-core"
-version = "0.5.0"
+version = "0.6.0"
 description = "Autonomy core library (C02) and owner registry tools (C03): envelopes, signatures, replay protection, outbox, audit chain, signed registry"
 readme = "README.md"
 requires-python = ">=3.10"
