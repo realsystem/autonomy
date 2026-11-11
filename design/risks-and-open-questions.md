@@ -33,7 +33,7 @@
 | Q-05 | Stay on hosted Tailscale or self-host Headscale? | Hosted Tailscale; revisit at M14 | M14 |
 | Q-06 | Which cloud model providers are acceptable for `site`-privacy farm data? | Allowed for Q&A; assessments local by default | M7 |
 | Q-07 | Monthly budget for cloud LLM usage across agents | Set a conservative cap in C12 | M7 |
-| Q-08 | Should `jarvis` remain on GCP, or move to the home hub once Autonomy exists? | Stays on GCP; it is an application | M21 |
+| Q-08 | ~~Should `jarvis` remain on GCP?~~ | Closed 2026-11-11: `jarvis` is out of scope (ADR-017) | — |
 | Q-09 | Archive list confirmation (`thequeue`, `fuel_economy`, `hw`, pre-2025 repos)? | Archive after confirmation | Any time |
 | Q-10 | Are any `airshipit` repos intended to be part of this system? | No | — |
 | Q-11 | Approval channel beyond Telegram: web console with passkeys required at M6, or later? | Telegram first; console at M6 for viewing, approvals later | M6 |

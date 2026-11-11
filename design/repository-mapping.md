@@ -10,7 +10,7 @@
 | `processor` | **Refactor into platform component** | C07 Job Service | Working durable queue with leases, retries, DLQ, worker polling through NAT | Add idempotency key, `traceparent`, versioned job types, per-worker Ed25519 identity, component principals; add CI |
 | `farm_agent` | **Refactor** (substantial) | A01 Field Station Agent | Right place (HA add-on) and idea; implementation has three defects and hard-coded scope | Fix tool loop, send system prompt, move HA access to the C20 adapter with allowlist from config, use C12 |
 | `farm_automation` | **Reuse as-is** (deployment repo) | Field Station configuration (HA packages, Farm Core) | Design baseline v1.2 is consistent with Autonomy's safety layering | Implement Phases 1–3 as planned |
-| `jarvis` | **Keep as independent application using Autonomy services** | C21 voice channel (P10) | Strong voice architecture; should not become a second control plane | Implement its `tools/` port as a C06 client; reuse its `LLMProvider` port as C12's interface |
+| `jarvis` | **Out of scope** (owner decision, 2026-11-11) | — (P10, independent application) | Not a source for C12/C11 and not a consumer; Autonomy does not depend on it | None (ADR-017) |
 | `knowledge` | **Keep independent**, **rename**, **extract executors** | P06; executors for C07 | It is a YouTube Q&A bot, not a knowledge store | Rename repo; expose transcript pipeline as `audio.transcribe` / `video.transcript` executors |
 | `youtube-processor` | **Extract reusable service** | C07 executors `video.frames`, `vision.describe_frames` | Structured JSON output mode is directly usable as perception | Wrap `main.py` stages as executors with JSON Schema I/O |
 | `tts` | **Extract reusable service** | C07 executor `tts.synthesize` | Working offline TTS | Wrap as executor; check upstream maintenance [A] |
@@ -51,7 +51,6 @@ flowchart LR
   PR --> C07
   FA --> A01
   FAU --> C20
-  JV --> C21 & C12
   KN & YP & TT & VR -->|executors| C07
 ```
 

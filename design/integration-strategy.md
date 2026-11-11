@@ -51,7 +51,7 @@ flowchart LR
 | T-A Contracts & core lib | — | everything | `autonomy` (`spec/`), `edge_server` |
 | T-B Job Service v2 | C01, C02 (Go) | governance | `processor` |
 | T-C Governance (PDP, gateway, approval) | C01–C03 | jobs, models | `edge_server` (cell) |
-| T-D Model gateway + agent host | C01, C02 | governance (mock decisions) | new `autonomy-agents` or `jarvis` extraction |
+| T-D Model gateway + agent host | C01, C02 | governance (mock decisions) | `autonomy-core` (`models`, `agents`; ADR-017) |
 | T-E HA adapter + Field Station cell | C02, C09 | models | `edge_server` ha-addon + `farm_automation` |
 | T-F Media executors | C07 v2 worker API | everything else | `youtube-processor`, `tts`, `knowledge` |
 | T-G Knowledge service | C01, C02, C12 | governance | new |
@@ -71,10 +71,10 @@ T-B, T-C, T-D, T-E and T-F proceed in parallel once T-A is at v0.1.
 | C05/C21 | Most | Approval | C04, Telegram | Fake owner | Telegram approvals for `edge_server` gated commands (already designed) | Approval for X cannot authorise X′ (IT-12) | All gated actions | Approval schema | Expire pending approvals at upgrade |
 | C09 | All | Envelope, sync | C02 | Two cells on one machine | Event log replacing `edge_server` outbox | 7-day simulated partition: no loss/dup (ST-04) | C10, agents, C15 | Sync protocol MAJOR | Dual-protocol window |
 | C10 | Mostly (it hosts others) | Health, cell API | C02, C09; C04/C06 when ready | — | Existing `edge_server` node + new health API | HA add-on survives restart/power cut | All cells | Packaging change | Release tags, rollback |
-| C12 | All | Model port | C02 | Fake provider | Library used by `jarvis` and A01 | `local_only` never egresses (IT-83) | Agents, C13, C15 | Port signature | Adapters versioned |
+| C12 | All | Model port | C02 | Fake provider | Library used by the `edge_server` `/ask` agent and the C13 reviewer (A01 later) | `local_only` never egresses (IT-83) | Agents, C13, C15 | Port signature | Adapters versioned |
 | C11 | Most | Agent manifest, plan | C12; C06 (mock ok) | Mock gateway returns decisions | Run A01 in read-only mode | Suspend cancels pending actions (ST-08) | Agents | Plan schema | — |
 | C13/C14 | All | Evaluation, verification | C04 contract; C20 read | Recorded observations | Evaluator CLI over proposal files | Stale input never `ok`; no-flow → `contradicted` (ST-12) | C04, C06 | Outcome enums | Open enums documented |
-| C15 | All | Fact, space | C02, C12 | — | Personal knowledge base usable from CLI | Provenance on every result (IT-40) | A03, A01, `jarvis` | Fact schema | Facts versioned, migrations offline |
+| C15 | All | Fact, space | C02, C12 | — | Personal knowledge base usable from CLI | Provenance on every result (IT-40) | A03, A01 | Fact schema | Facts versioned, migrations offline |
 | C20 (HA) | All | Adapter contract | C02 | HA dev container (`farm_agent` has one [V]) | Read-only HA observer publishing events | Allowlist enforced (IT-60) | A01, C14 | Operation names | Operations versioned |
 | A01 | Most | Agent manifest, plan | C11, C12, C20 | Recorded farm data | Daily assessment in Telegram (read-only) | Golden scenarios pass | Owner | — | Shadow run before promotion |
 

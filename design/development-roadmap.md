@@ -24,7 +24,7 @@ Milestone ids (M0–M23) are referenced from [requirements.md](requirements.md).
 |---|---|---|---|---|---|---|---|---|---|
 | **M5** PDP + Action Gateway + Audit | Single governed execution path | C04, C06, C16 | M3 | Cedar PDP embedded; gateway with mock + `edge_server` host-helper adapter; audit chain | No R1+ action without decision; crash reconciliation (IT-13, IT-15) | Policy complexity | Policy unit tests; fault injection | `edge_server` L1 repairs run through the gateway | L |
 | **M6** Approval & owner control | Owner in the loop | C05, C21 (Telegram) | M5 | Approval flow (generalised from `edge_server` design [V]); revoke/suspend/hold | Approval binding and expiry (IT-12); suspend works offline (ST-08) | Approval fatigue | Replay/tamper tests | Gated `/reboot`/`/redeploy` via approvals | M |
-| **M7** Model gateway + agent host | Provider-independent agents | C12, C11 | M2 | C12 library from `jarvis` port; Ollama + 2 cloud adapters; C11 thin loop; budgets | `local_only` never egresses (IT-83); provider outage falls back (ST-03) | Scope creep into a framework | Fake providers; egress block test | `jarvis` and A01 share one model layer | M |
+| **M7** Model gateway + agent host | Provider-independent agents | C12, C11 | M2 | C12 library in `autonomy-core` built from the contracts (ADR-017): OpenAI-compatible adapter (Ollama, llama.cpp, OpenRouter, …) + Anthropic adapter, no SDKs; privacy routing table; fallback; budgets. C11 thin host: manifest-bound read tools, proposals only, suspend cancels | `local_only` never egresses (IT-83); provider outage falls back (ST-03) | Scope creep into a framework | Fake providers; egress block test | `edge_server` `/ask` agent and the C13 LLM reviewer run on C12/C11; A01 can adopt the same layer | M |
 | **M8** Evaluator + Verifier | "Should" and "did it work" | C13, C14 | M5, M7 | Deterministic checks; LLM critique (escalate-only); verification probes | Stale inputs never `ok`; contradicted detection (ST-12) | False confidence in LLM review | Recorded scenarios | Evaluations and verifications in audit | M |
 | **M9** Observability + secrets baseline | Diagnosable, no leaks | C17, C18 | M2 | Logs/trace conventions; hub collector; `secret://`; SOPS/age; secret scanning | One trace per action story (IT-71); no secrets found (IT-81) | Hub resource use | Scanner in CI | Owner can trace an action end to end | M |
 
@@ -56,7 +56,7 @@ Depends on farm_automation Phases 1–3 (monitoring baseline, frozen) [V]. Irrig
 |---|---|---|---|---|
 | **M19** Knowledge service + Research agent | Knowledge with provenance | C15, A03 | Provenance on every fact; quarantine respected (ST-05) | L |
 | **M20** Workflow coordinator | Multi-step with compensation | C08 | ST-07 | M |
-| **M21** `jarvis` tools via gateway | Voice can request actions safely | P10/C21, C06 | Voice request → proposal → approval → action | M |
+| ~~M21~~ | *Removed 2026-11-11: `jarvis` is out of scope. A voice channel, if wanted later, is a new C21 client of C06/C09 APIs* | | | |
 | **M22** Applications as consumers | Apps use platform services | P01–P09 | At least two apps use C07/C12 without sharing data | M |
 | **M23** Adaptive autonomy | Higher levels where earned | C04, A01 | Promotion evidence per §2 of governance doc; A3 for farm reporting; A4 only with numeric bounds and independent verification | M |
 

@@ -23,9 +23,9 @@ Rule: existing repository technologies first; add infrastructure only against a 
 | Backup | Litestream / `sqlite3 .backup` + age | Adopt | restic, borg (also fine for files) | Low | None | — |
 | Secrets | Per-cell store + SOPS/age | Adopt | Vault/OpenBao, Infisical, cloud SM | Low | None | ADR-013 |
 | Observability | OpenTelemetry SDK + Collector; Prometheus/Grafana; Jaeger/Tempo | Adopt | Vendor APM, ELK | Medium (hub only) | Low (OTLP) | — |
-| Model access | C12 library around `jarvis` `LLMProvider` port; Ollama for local | Adapt | LiteLLM proxy, OpenRouter, direct SDKs | Low | Low | ADR-012 |
-| Local models | Ollama (used in 4 repos [V]); llama.cpp server as alternative | Adopt | vLLM (GPU servers), LM Studio | Low–Medium | Low | ADR-012 |
-| Agent framework | None as platform dependency; thin agent loop in C11 | Build (thin) | OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, Pydantic AI | Low | Avoided | ADR-012 |
+| Model access | C12 library in `autonomy-core`: OpenAI-compatible + Anthropic HTTP adapters, no SDKs; Ollama for local | Build (ADR-017) | LiteLLM proxy, OpenRouter, direct SDKs | Low | Low | ADR-017 (was ADR-012) |
+| Local models | Ollama (used in 4 repos [V]); llama.cpp server as alternative | Adopt | vLLM (GPU servers), LM Studio | Low–Medium | Low | ADR-017 (was ADR-012) |
+| Agent framework | None as platform dependency; thin agent loop in C11 | Build (thin) | OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, Pydantic AI | Low | Avoided | ADR-017 (was ADR-012) |
 | Tool protocol | MCP (2026-07-28) behind C06 | Adopt (optional) | Custom JSON tools only | Low | Low (open spec) | ADR-009 |
 | Agent interop | A2A v1.0 | Defer | — | — | — | ADR-009 |
 | Supply chain | Pinned deps, CI-built signed tags, GitHub artifact attestations / Sigstore | Adopt | — | Low | Low | — |
@@ -65,7 +65,7 @@ SPIFFE/SPIRE solves workload identity at datacenter scale; it adds a server and 
 
 | | C12 library (Python) | LiteLLM proxy | Direct SDKs |
 |---|---|---|---|
-| Provider independence | Port + adapters (`jarvis` already has two [V]) | 100+ providers via OpenAI-compatible API [R] | None |
+| Provider independence | Own port + two wire adapters (ADR-017) | 100+ providers via OpenAI-compatible API [R] | None |
 | Privacy routing (`local_only`) | Enforced in-process before any network call | Config-based routing; data reaches the proxy | Per call site |
 | Dependency surface | Small | Large Python dependency tree (supply-chain exposure) [A] | Per SDK |
 | Ops cost | None | One more service | None |
