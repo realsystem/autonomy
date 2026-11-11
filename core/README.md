@@ -1,6 +1,6 @@
-# autonomy-core v0.4.0 (C02; C03 tools; C04 PDP; C05 approvals; C06 gateway)
+# autonomy-core v0.5.0 (C02; C03 tools; C04 PDP; C05 approvals; C06 gateway; C17, C18 conventions)
 
-**Status:** v0.3.0 draft (milestones M2, M3, M5, M6) · 2026-11-09 · implements [spec](../spec/README.md) 0.4.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
+**Status:** v0.3.0 draft (milestones M2, M3, M5, M6, M9) · 2026-11-10 · implements [spec](../spec/README.md) 0.4.0 · location and releases: [ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)
 
 The one implementation of what every component does at its boundary: canonical JSON, Ed25519 keys and signatures, building and accepting envelopes, replay protection, a restart-safe sequence counter, a persistent outbox and the hash-chained audit log. Extracted from `edge_server`'s control plane.
 
@@ -20,6 +20,8 @@ The one implementation of what every component does at its boundary: canonical J
 | Policy decisions (C04) | `Pdp`, `PolicyBundle`, `load_bundle`, `decision_request`; Cedar via `cedarpy` | — |
 | Approvals and owner control (C05) | `ApprovalService`, `ControlState` | — |
 | Action Gateway (C06) | `ActionGateway`, `AdapterResult`, `MockAdapter` | — |
+| Logs, traces, redaction (C17) | `configure_logging`, `Tracer`, `REDACTOR`, `correlation`, `reconstruct` | — |
+| Secrets (C18) | `resolve`, `resolve_config`, `register_provider`, `scan` | — |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
 
 ## Use
@@ -76,6 +78,13 @@ record = gateway.execute({"action_id": ..., "proposal": proposal, "decision": de
 ```
 
 Decision rules (R3 never; Cedar `forbid` wins; grant, policy, owner or R0 must permit; untrusted input, evaluator escalation or a level below the risk send it to the owner; `@approvable` policies give `require_approval`) are in the `pdp` module docstring; gateway checks in the `gateway` module docstring. Real Cedar is tested in CI (`policy engine (Cedar)` job).
+
+## Logs, traces and secrets
+
+- Logs: `configure_logging("svc:x", "svc:x@cell")` — JSON lines matching spec `log-record`, with `trace_id`, `span_id` and `correlationid` from the current context; `AUTONOMY_LOG_FORMAT=text` keeps text. Everything passes the redactor.
+- Traces: `Tracer("/state/traces.jsonl", service=...)` writes OTLP/JSON span lines, offline; an OpenTelemetry Collector on the hub can read them later (`filelog`/`otlpjson` receivers). Continue an envelope's trace with `tracer.span(name, envelope["traceparent"])`. Audit records written inside a span carry its `trace_id`, so `autonomy trace <correlationid> --audit audit.jsonl --traces traces.jsonl` rebuilds an action story (IT-71).
+- Secrets: configs hold `secret://env/NAME`, `secret://file/path`, `secret://sops/file.yaml#dotted.key`, `secret://age/file.age` or `secret://store/name` (host provider); `resolve_config` replaces them and registers each value with the redactor.
+- Scanning: `autonomy secrets scan . --allowlist .secrets-allowlist` (CI: `secrets.yml`). Allowlist lines are `<glob> [rule]`; a line containing `secret-scan: allow` is skipped.
 
 ## Tests
 

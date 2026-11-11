@@ -18,6 +18,7 @@ from .errors import Reject
 from .ids import to_rfc3339
 from .keys import Ed25519PrivateKey, KeyRing
 from .signing import GENESIS_HASH, audit_hash, sign_object, verify_object
+from .telemetry import current_traceparent, parse_traceparent
 
 
 class AuditLog:
@@ -67,6 +68,9 @@ class AuditLog:
             }
             if config_hash:
                 rec["config_hash"] = config_hash
+            ctx = parse_traceparent(current_traceparent())
+            if ctx:  # ties the record to the trace of the action story (IT-71)
+                rec["trace_id"] = ctx[0]
             rec["hash"] = audit_hash(rec)
             sign_object(rec, "audit-record", self.key)
             self.path.parent.mkdir(parents=True, exist_ok=True)

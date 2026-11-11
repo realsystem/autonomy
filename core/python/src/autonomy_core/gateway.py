@@ -22,6 +22,7 @@ Every outcome is a signed ExecutionRecord and an audit record.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -39,6 +40,7 @@ from .keys import Ed25519PrivateKey, KeyRing, verify
 from .pdp import verify_owner_signed
 from .registry import Registry
 from .signing import params_hash, sign_object, signing_input, verify_object
+from .telemetry import Tracer, correlation
 
 log = logging.getLogger("autonomy_core.gateway")
 
@@ -152,6 +154,7 @@ class ActionGateway:
         suspended: Callable[[], bool] = lambda: False,
         blocked: Callable[[str], str | None] = lambda principal: None,
         approval_keys: KeyRing | None = None,
+        tracer: Tracer | None = None,
         auto_per_target_hour: int = 2,
         breaker_hold: float = 24 * 3600.0,
     ):
@@ -171,6 +174,7 @@ class ActionGateway:
         self.suspended = suspended
         self.blocked = blocked
         self.approval_keys = approval_keys
+        self.tracer = tracer
         self.auto_per_target_hour = auto_per_target_hour
         self.breaker_hold = breaker_hold
         self.lock = threading.RLock()
@@ -227,8 +231,27 @@ class ActionGateway:
 
     # -- execute
 
-    def execute(self, request: Mapping[str, Any]) -> dict[str, Any]:
-        """Run an ActionRequest; always returns a signed ExecutionRecord."""
+    def execute(
+        self, request: Mapping[str, Any], *, traceparent: str | None = None, correlationid: str | None = None
+    ) -> dict[str, Any]:
+        """Run an ActionRequest; always returns a signed ExecutionRecord. ``traceparent`` and
+        ``correlationid`` come from the envelope that carried the request."""
+        corr = correlationid or (request.get("correlationid") if isinstance(request, Mapping) else None)
+        aid = str(request.get("action_id", "")) if isinstance(request, Mapping) else ""
+        with self._span("gateway.execute", traceparent, aid) as sp, correlation(str(corr) if corr else None):
+            rec = self._execute(request, str(corr) if corr else None, sp)
+            if sp is not None:
+                sp.set(**{"autonomy.status": rec["status"]})
+                if rec["status"] in ("rejected", "failed", "unknown"):
+                    sp.error(str(rec.get("error", {}).get("code", rec["status"])))
+            return rec
+
+    def _span(self, name: str, traceparent: str | None, aid: str) -> Any:
+        if self.tracer is None:
+            return contextlib.nullcontext()
+        return self.tracer.span(name, traceparent, **{"autonomy.action_id": aid})
+
+    def _execute(self, request: Mapping[str, Any], corr: str | None, sp: Any) -> dict[str, Any]:
         with self.lock:
             aid = str(request.get("action_id", "")) if isinstance(request, Mapping) else ""
             key = str(request.get("idempotency_key", "")) if isinstance(request, Mapping) else ""
@@ -239,7 +262,7 @@ class ActionGateway:
             try:
                 action, automatic, obligations = self._check(request)
             except Reject as why:
-                return self._reject(aid or "act_invalid", request, why)
+                return self._reject(aid or "act_invalid", request, why, corr)
             adapter = self.adapters[action["type"]]
             now = self.clock()
             entry = {
@@ -253,8 +276,11 @@ class ActionGateway:
                 "dry_run": "dry_run" in obligations,
                 "adapter": adapter.name,
                 "refs": _refs(request),
-                "correlationid": str(request.get("correlationid") or "corr_" + aid[4:]),
+                "correlationid": corr or "corr_" + aid[4:],
             }
+            if sp is not None:
+                entry["traceparent"] = sp.traceparent
+                sp.set(**{"autonomy.action_type": action["type"], "autonomy.target": action["target"]})
             self.by_key[key] = aid
             if "dry_run" in obligations:
                 return self._finish(entry, AdapterResult("succeeded", {"dry_run": True}))
@@ -262,7 +288,8 @@ class ActionGateway:
             self.journal.append(entry)  # write-ahead: a crash after this is reconciled
             self._audit(entry, "action.started", f"{action['type']} on {action['target']} via {adapter.name}")
             try:
-                result = adapter.execute(aid, action)
+                with self._span("adapter.execute", None, aid):
+                    result = adapter.execute(aid, action)
             except SystemExit:
                 raise
             except Exception as exc:  # an adapter bug is a failed action, not a crash
@@ -273,12 +300,16 @@ class ActionGateway:
             return self._finish(entry, result)
 
     def complete(self, action_id: str, result: AdapterResult) -> dict[str, Any]:
-        """Outcome of an asynchronous action."""
+        """Outcome of an asynchronous action (joins the action's trace)."""
         with self.lock:
             entry = self.started.get(action_id)
             if entry is None:
                 raise Reject("unknown action", action_id)
-            return self._finish(entry, result)
+            with (
+                self._span("gateway.complete", entry.get("traceparent"), action_id),
+                correlation(entry.get("correlationid")),
+            ):
+                return self._finish(entry, result)
 
     # -- checks
 
@@ -409,7 +440,7 @@ class ActionGateway:
         rec["executor"] = self.executor
         return sign_object(rec, "execution-record", self.key)
 
-    def _reject(self, aid: str, req: Any, why: Reject) -> dict[str, Any]:
+    def _reject(self, aid: str, req: Any, why: Reject, corr: str | None = None) -> dict[str, Any]:
         code = why.reason if "." in why.reason else f"validation.{why.reason.replace(' ', '_')}"
         retryable = code.startswith(("unavailable.", "conflict."))
         rec = self._sign(
@@ -423,9 +454,7 @@ class ActionGateway:
         entry = {
             "action_id": rec["action_id"],
             "refs": _refs(req) if isinstance(req, Mapping) else {},
-            "correlationid": str(req.get("correlationid", "corr_rejected"))
-            if isinstance(req, Mapping)
-            else "corr_rejected",
+            "correlationid": corr or "corr_rejected",
         }
         self._audit(entry, "action.rejected", f"rejected: {code} {why.detail}"[:1000])
         return rec

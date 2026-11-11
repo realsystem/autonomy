@@ -395,6 +395,33 @@ def cmd_fingerprint(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_scan(args: argparse.Namespace) -> int:
+    from .secrets import scan
+
+    allow = Path(args.allowlist) if args.allowlist else None
+    if allow is None and Path(".secrets-allowlist").exists():
+        allow = Path(".secrets-allowlist")
+    findings = scan(args.paths or ["."], allowlist=allow)
+    for f in findings:
+        print(f)
+    print(f"{'FAIL' if findings else 'PASS'}: {len(findings)} possible secret(s)")
+    return 1 if findings else 0
+
+
+def cmd_trace(args: argparse.Namespace) -> int:
+    from .telemetry import read_spans, reconstruct
+
+    audit = [json.loads(line) for line in Path(args.audit).read_text().splitlines() if line.strip()]
+    story = reconstruct(args.correlationid, audit, read_spans(args.traces) if args.traces else [])
+    if not story["steps"]:
+        print(f"no audit records for {args.correlationid}")
+        return 1
+    print("\n".join(story["steps"]))
+    print(f"refs: {json.dumps(story['refs'])}")
+    print(f"trace(s): {', '.join(story['trace_ids']) or '-'}; spans: {', '.join(story['spans']) or '-'}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="autonomy", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -408,6 +435,19 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("fingerprint", help="fingerprint of a public key, for out-of-band checks")
     p.add_argument("key")
     p.set_defaults(func=cmd_fingerprint)
+
+    sec = sub.add_parser("secrets", help="secret scanning (IT-81)").add_subparsers(dest="sub", required=True)
+    p = sec.add_parser("scan", help="find secret-shaped text in files; exit 1 if any")
+    p.add_argument("paths", nargs="*")
+    p.add_argument(
+        "--allowlist", help="'<glob> [rule]' lines of expected test data (default .secrets-allowlist)"
+    )
+    p.set_defaults(func=cmd_scan)
+    p = sub.add_parser("trace", help="reconstruct an action story from the audit log and traces (IT-71)")
+    p.add_argument("correlationid")
+    p.add_argument("--audit", required=True, help="audit JSON Lines file")
+    p.add_argument("--traces", help="OTLP/JSON lines file")
+    p.set_defaults(func=cmd_trace)
 
     reg = sub.add_parser("registry", help="the owner-signed registry").add_subparsers(
         dest="sub", required=True
