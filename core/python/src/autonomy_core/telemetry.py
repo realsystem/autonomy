@@ -48,7 +48,7 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         # quoted literal values only: code and secret:// references are not secrets
         re.compile(
             r"(?i)\b(?:password|passwd|secret|api_key|apikey|token)\w*['\"]?\s*[=:]\s*"
-            r"['\"](?!secret://|\$\{|<|\[REDACTED\])[^'\"\s]{8,}['\"]"
+            r"['\"](?!secret://|\$|<|\[REDACTED\])[^'\"\s]{8,}['\"]"
         ),
     ),
 ]

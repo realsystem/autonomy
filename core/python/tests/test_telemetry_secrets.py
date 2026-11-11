@@ -68,6 +68,15 @@ def test_redaction_patterns(text):
     assert not sec.scan_text(out), out
 
 
+def test_references_and_variables_are_not_secrets():
+    for line in [
+        'token = "secret://env/HA_TOKEN"',
+        'SECRETS_FILE="$SECRETS_DIR/x.enc"',
+        'password: "<your password>"',
+    ]:
+        assert sec.scan_text(line) == [], line
+
+
 def test_registered_values_and_fields():
     r = Redactor()
     r.register("s3cr3t-value-123")
