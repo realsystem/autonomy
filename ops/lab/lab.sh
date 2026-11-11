@@ -204,7 +204,7 @@ cmd_verify() {
   cmd_say "/ask are you there?"; wait_reply 'no model answered|assistant failed' 150
   "$PROC/lab/lab.sh" llm normal >/dev/null; ok
 
-  step audit;    tg POST /_lab/clear '{}' >/dev/null; cmd_say "/audit"; wait_reply 'restart' 60; ok
+  step audit;    tg POST /_lab/clear '{}' >/dev/null; cmd_say "/audit"; wait_reply 'audit log of' 60; ok
 
   step reboot;   tg POST /_lab/clear '{}' >/dev/null; code="$(fresh_code)"; cmd_say "/reboot $code"
   wait_reply 'back online after reboot' 180; ok
