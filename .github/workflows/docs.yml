@@ -1,0 +1,27 @@
+name: docs
+
+# Design docs, ADRs and READMEs: relative links resolve (files and #headings) and every
+# ADR is in the ADR index. Runs on every change, so docs-only pull requests get a check.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    name: links and ADR index
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tools/check_docs.py
