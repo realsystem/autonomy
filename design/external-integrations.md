@@ -67,4 +67,4 @@ Autonomy sits **above** HA: it reads HA, writes only HA helpers that HA's own au
 
 ## 5. Voice and human interfaces
 
-`jarvis` remains the voice product (P10). For Autonomy it is a C21 channel: speech → text → `jarvis` core → questions answered from C15/C09 read APIs; requests to act become proposals through C06's MCP facade. `jarvis` holds no device credentials.
+Voice is not planned. `jarvis` (P10) is out of Autonomy's scope (2026-11-11, ADR-017). If voice is wanted later, it is a new C21 client of the same read APIs (C15/C09). Requests to act from it become proposals through C06's MCP facade, and it holds no device credentials.

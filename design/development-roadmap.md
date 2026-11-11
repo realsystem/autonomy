@@ -16,7 +16,7 @@ Milestone ids (M0–M23) are referenced from [requirements.md](requirements.md).
 | **M1** Contracts v0.1 | Freeze first schemas | C01 | M0 | `spec/` folder in `realsystem/autonomy`: schemas, fixtures, conformance CLI | All fixtures validate; compat checker runs in CI | Over-designing schemas | Schema tests | Any repo can validate its messages | M |
 | **M2** Core library v0.1 | One envelope implementation | C02 | M1 | Python package extracted from `edge_server` controlplane; Go module | `edge_server` heartbeats use it, ~800 existing tests green; Python↔Go vectors pass | Breaking `edge_server` | Existing suite + vectors | Signed envelopes everywhere | M |
 | **M3** Registry v0.1 | Identity for all components | C03 | M2 | Registry schema; `autonomy registry` CLI; `fleet.yaml` migration | New mock component accepted by a cell with no code change (ST-01) | Migration friction | CLI tests | Owner-signed registry for fleet + components | M |
-| **M4** Job Service v2 contract | Make `processor` an Autonomy component | C07 | M1, M2 (Go) | J1–J4, J9 from execution doc; manifest; CI | Idempotency, trace propagation, signed worker identity (IT-14, IT-20, IT-21) | Regressions without existing CI | New CI + integration scripts | Media apps can submit traced, idempotent jobs | M |
+| **M4** Job Service v2 contract | Make `processor` an Autonomy component | C07 | M1, M2 (Go) | J1–J4, J9 from execution doc; manifest; CI | Idempotency, trace propagation, signed worker identity (IT-14, IT-20, IT-21) | Regressions without existing CI | New CI + integration scripts | Media apps can submit traced, idempotent jobs. *Status 2026-11-11: CI, idempotency, trace hand-over and signed workers merged (processor #1–#2), plus `llm.chat` and retention for M7. Still open: component manifest, `job_type@version` registry, J-items beyond these* | M |
 
 ## Stage 2 — Minimum viable Autonomy Core
 
@@ -24,7 +24,7 @@ Milestone ids (M0–M23) are referenced from [requirements.md](requirements.md).
 |---|---|---|---|---|---|---|---|---|---|
 | **M5** PDP + Action Gateway + Audit | Single governed execution path | C04, C06, C16 | M3 | Cedar PDP embedded; gateway with mock + `edge_server` host-helper adapter; audit chain | No R1+ action without decision; crash reconciliation (IT-13, IT-15) | Policy complexity | Policy unit tests; fault injection | `edge_server` L1 repairs run through the gateway | L |
 | **M6** Approval & owner control | Owner in the loop | C05, C21 (Telegram) | M5 | Approval flow (generalised from `edge_server` design [V]); revoke/suspend/hold | Approval binding and expiry (IT-12); suspend works offline (ST-08) | Approval fatigue | Replay/tamper tests | Gated `/reboot`/`/redeploy` via approvals | M |
-| **M7** Model gateway + agent host | Provider-independent agents | C12, C11 | M2 | C12 library from `jarvis` port; Ollama + 2 cloud adapters; C11 thin loop; budgets | `local_only` never egresses (IT-83); provider outage falls back (ST-03) | Scope creep into a framework | Fake providers; egress block test | `jarvis` and A01 share one model layer | M |
+| **M7** Model gateway + agent host | Provider-independent agents | C12, C11 | M2 | C12 library in `autonomy-core` built from the contracts (ADR-017): `processor` job adapter (`llm.chat` on the home GPU, queue on the edge server) + OpenAI-compatible and Anthropic adapters for clouds, no SDKs; privacy routing by locality (`cell`/`site`/`owned`/`cloud`); fallback; budgets. C11 thin host: manifest-bound read tools, proposals only, suspend cancels | `local_only` never egresses (IT-83); provider outage falls back (ST-03) | Scope creep into a framework | Fake providers; egress block test | `edge_server` `/ask` agent and the C13 LLM reviewer run on C12/C11; A01 can adopt the same layer | M |
 | **M8** Evaluator + Verifier | "Should" and "did it work" | C13, C14 | M5, M7 | Deterministic checks; LLM critique (escalate-only); verification probes | Stale inputs never `ok`; contradicted detection (ST-12) | False confidence in LLM review | Recorded scenarios | Evaluations and verifications in audit | M |
 | **M9** Observability + secrets baseline | Diagnosable, no leaks | C17, C18 | M2 | Logs/trace conventions; hub collector; `secret://`; SOPS/age; secret scanning | One trace per action story (IT-71); no secrets found (IT-81) | Hub resource use | Scanner in CI | Owner can trace an action end to end | M |
 
@@ -56,7 +56,7 @@ Depends on farm_automation Phases 1–3 (monitoring baseline, frozen) [V]. Irrig
 |---|---|---|---|---|
 | **M19** Knowledge service + Research agent | Knowledge with provenance | C15, A03 | Provenance on every fact; quarantine respected (ST-05) | L |
 | **M20** Workflow coordinator | Multi-step with compensation | C08 | ST-07 | M |
-| **M21** `jarvis` tools via gateway | Voice can request actions safely | P10/C21, C06 | Voice request → proposal → approval → action | M |
+| ~~M21~~ | *Removed 2026-11-11: `jarvis` is out of scope. A voice channel, if wanted later, is a new C21 client of C06/C09 APIs* | | | |
 | **M22** Applications as consumers | Apps use platform services | P01–P09 | At least two apps use C07/C12 without sharing data | M |
 | **M23** Adaptive autonomy | Higher levels where earned | C04, A01 | Promotion evidence per §2 of governance doc; A3 for farm reporting; A4 only with numeric bounds and independent verification | M |
 

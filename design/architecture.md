@@ -34,7 +34,7 @@ What a reliable distributed autonomous system needs [R: sources in research-and-
 | Outcome verification | "Did it work" | Farm design: flow meter, soil wet-up (design) | **Missing** as a platform concept | C14 |
 | Knowledge with provenance and time | Research, history, learning | None (the `knowledge` repo is a bot) | **Missing** | C15 |
 | Agent memory | Persistent agent state | `jarvis` ConversationStore | Per-agent, owned, separable | C15 (private spaces), C11 |
-| Model/provider abstraction and routing | Provider independence, local fallback | `jarvis` LLMProvider port; 4 direct Ollama clients | One gateway with privacy routing and budgets | C12 |
+| Model/provider abstraction and routing | Provider independence, local fallback | 4 direct Ollama clients (`jarvis` port out of scope) | One gateway with privacy routing and budgets | C12 |
 | Prompt-injection containment | Safe use of untrusted content | None | **Missing** | C11 patterns, C04 taint rules |
 | Unified audit trail | Accountability | `processor.audit_log`, planned `edge_server` incidents | One tamper-evident format across cells | C16 |
 | Tracing and structured logs | Diagnosis across components | None | **Missing** | C17 |
@@ -51,7 +51,7 @@ What a reliable distributed autonomous system needs [R: sources in research-and-
 flowchart TB
   subgraph HUMAN["Human Control"]
     OWN["Owner<br/>(root key, operational key)"]
-    C21["C21 Human Interfaces<br/>Owner Console · Telegram · Voice (jarvis)"]
+    C21["C21 Human Interfaces<br/>Owner Console · Telegram"]
     C05["C05 Approval & Owner Control<br/>approvals · revocation · e-stop"]
   end
   subgraph INTEL["Intelligence"]

@@ -21,7 +21,7 @@ Autonomy is a **federation of cells bound by contracts**. Each machine or site i
 | Execution | C06 Action Gateway · C07 Job Service · C08 Workflow Coordinator · C14 Verifier |
 | Intelligence | C11 Agent Host · C12 Model Gateway · agents A01 Field Station, A02 Fleet Doctor, A03 Research |
 | Runtime & cross-cutting | C09 Event Log & Messaging · C10 Cell Runtime · C15 Knowledge · C16 Audit · C17 Observability · C18 Secrets · C19 Backup & Recovery · C20 World Adapters |
-| Independent applications | P01 leadgen · P02 wildwatch · P03 gardening-service · P04 my_fin_structure · P05 common_reflection · P06 knowledge (YouTube answers) · P07 tires/wires · P08 talk · P09 yt_sync · P10 jarvis |
+| Independent applications | P01 leadgen · P02 wildwatch · P03 gardening-service · P04 my_fin_structure · P05 common_reflection · P06 knowledge (YouTube answers) · P07 tires/wires · P08 talk · P09 yt_sync · P10 jarvis (out of scope) |
 
 How they fit: [architecture.md](architecture.md) · [diagrams/logical-architecture.mmd](diagrams/logical-architecture.mmd) · [diagrams/deployment-topology.mmd](diagrams/deployment-topology.mmd).
 
@@ -31,7 +31,7 @@ How they fit: [architecture.md](architecture.md) · [diagrams/logical-architectu
 |---|---|
 | `edge_server` — Ed25519 node identity, signed messages, outbox, fleet registry, approval and tier design, power stages, ~800 tests | C10 Cell Runtime; seed of C02, C03, C05, C06 |
 | `processor` — durable SQLite job queue with leases, retries, DLQ, NAT-friendly workers | C07 Job Service |
-| `jarvis` — provider-independent `LLMProvider` port, voice assistant | C12 seed; voice channel (C21/P10) |
+| `jarvis` — voice assistant | Out of scope (owner decision 2026-11-11, ADR-017) |
 | `farm_agent` — HA add-on prototype (with defects) | A01 Field Station Agent |
 | `farm_automation` — layered farm safety design | Field Station reference deployment |
 | Media tools (`youtube-processor`, `tts`, `knowledge`, `video_reprocessor`) | Job executors |

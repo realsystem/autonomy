@@ -14,12 +14,12 @@ Identifiers are stable across the package: **C** = platform component, **A** = s
 | C04 | Policy & Authority | — | New | Policy Decision Point, grants, autonomy levels, risk classes | C01–C03 | Decision, Grant, policy bundle | High | P1 | In progress: `core` PDP with Cedar (`cedarpy`), spec `policy-bundle` |
 | C05 | Approval & Owner Control | `edge_server` approval design, Telegram bot | Refactor | Approval requests, owner approvals, revocations, suspend/e-stop | C02–C04, C21 | Approval, Revocation, Suspend | Medium | P1 | In progress: `core` ApprovalService and ControlState; `edge_server` /approve, /suspend, /hold, /resume |
 | C06 | Action Gateway | `edge_server` executor design | New | Sole executor of consequential actions; checks decision; idempotency; rate limits; records | C02, C04, C20 | ExecutionRecord, action API | High | P1 | In progress: `core` ActionGateway; `edge_server` host actions run through it |
-| C07 | Job Service | `processor` | Refactor | Durable jobs, leases, retries, DLQ, workers, executors | C01, C02 | Job, worker API | High | P1 | Working MVP |
+| C07 | Job Service | `processor` | Refactor | Durable jobs, leases, retries, DLQ, workers, executors | C01, C02 | Job, worker API | High | P1 | Working; Autonomy options merged (processor #1–#2: CI, idempotency, trace, signed workers, retention, cancel, `llm.chat`); control plane hosted on the edge server (edge_server #37) |
 | C08 | Workflow Coordinator | — | New (library first) | Multi-step workflows with compensation over C07 | C07 | Workflow, Step | Medium | P2 | Not started |
 | C09 | Event Log & Messaging | `edge_server` Outbox/SeenStore | Refactor | Per-cell append-only event log, topics, store-and-forward sync | C01, C02 | Envelope, sync API | High | P0 | Partial |
 | C10 | Cell Runtime | `edge_server` | Refactor | Per-cell daemon: identity, health, local hosting of C04/C06/C09/C16, updates, power stages | C02–C04, C06, C09 | Health, cell API | Medium | P1 | Partial |
-| C11 | Agent Host | `farm_agent` loop, `jarvis` orchestrator | New | Runs agents: budgets, tool binding, trust isolation, memory access | C02, C12, C06, C15 | Agent manifest, Plan | Medium | P1 | Not started |
-| C12 | Model Gateway | `jarvis/llm` | Extract | Provider abstraction, routing (privacy/cost/latency), fallback, budgets | C02 | `LLMProvider` port, usage events | High | P1 | Partial (port + 2 adapters) |
+| C11 | Agent Host | `farm_agent` loop (pattern only) | New (ADR-017) | Runs agents: budgets, tool binding, trust isolation, memory access | C02, C12, C06, C15 | Agent manifest, Plan | Medium | P1 | Not started |
+| C12 | Model Gateway | — (four direct Ollama clients to replace); local inference through `processor` (C07) `llm.chat` on the home GPU server | New (ADR-017) | Provider abstraction, routing (privacy/cost/latency), fallback, budgets | C02 | `LLMProvider` port, usage events | High | P1 | Not started (planned in `autonomy-core`, ADR-017) |
 | C13 | Evaluator | — | New | Preconditions, invariants, risk class, dry-run, optional independent LLM critique | C04, C12 | Evaluation | High | P1 | In progress: `core` Evaluator (deterministic checks, escalate-only LLM review hook); `edge_server` evaluates host actions |
 | C14 | Verifier | — | New | Independent outcome verification from declared probes | C20, C09 | Verification | High | P1 | In progress: `core` Verifier (probes, signed verifications, contradicted → incident + undo proposal, ST-12 scenarios); `edge_server` verifies host actions |
 | C15 | Knowledge Service | — (`knowledge` repo is unrelated) | New | Documents, facts with provenance and time, private spaces, retrieval | C02, C12 | Knowledge API, fact schema | High | P3 | Not started |
@@ -28,13 +28,13 @@ Identifiers are stable across the package: **C** = platform component, **A** = s
 | C18 | Secrets | `edge_server/src/secret_store.py` | Refactor | Per-cell secret store, encrypted config in git, credential scoping | C02 | Secret reference `secret://` | High | P1 | In progress: `core` secret references (env, file, SOPS, age, store), SOPS check, scanner + gitleaks in CI |
 | C19 | Backup & Recovery | `edge_server` archive role (design) | New | Backups of SQLite/HA/config/keys, restore drills | C10, C18 | Backup manifest | Medium | P2 | Design only |
 | C20 | World Adapters | `farm_agent` HA calls, `edge_server` plugins | Refactor | Scoped access to HA, Frigate, power, web, email, files; observations and actuations with probes | C02, C09 | Adapter contract, observation events | High | P1 | Partial |
-| C21 | Human Interfaces | `edge_server` bot, `jarvis` | Refactor / reuse | Owner Console (web), Telegram, voice | C05, C09, C16 | UI only (uses others' APIs) | High | P1 | Partial |
+| C21 | Human Interfaces | `edge_server` bot | Refactor / reuse | Owner Console (web), Telegram | C05, C09, C16 | UI only (uses others' APIs) | High | P1 | Partial |
 | A01 | Field Station Agent | `farm_agent` | Refactor | Farm observation, assessment, irrigation recommendations, proposals | C11, C12, C20, C15 | Agent manifest | High | P1 | Prototype |
 | A02 | Fleet Doctor | `edge_server` incident agent (design) | New | Diagnose other cells; propose repairs from catalog | C11, C06 | Agent manifest | High | P2 | Design only |
 | A03 | Research Agent | — | New | Research, source evaluation, knowledge maintenance (quarantined: no consequential tools) | C11, C12, C15 | Agent manifest | High | P3 | Not started |
 | P01–P10 | Applications | see [repository-mapping.md](repository-mapping.md) | Existing | Domain products using Autonomy services optionally | C07, C12, C09 (optional) | Their own | — | — | Various |
 
-Applications: P01 `leadgen`, P02 `wildwatch`, P03 `gardening-service`, P04 `my_fin_structure`, P05 `common_reflection`, P06 `knowledge` (YouTube answers), P07 `tires`/`wires`, P08 `talk`, P09 `yt_sync`, P10 `jarvis` (as an application; its interface role is part of C21).
+Applications: P01 `leadgen`, P02 `wildwatch`, P03 `gardening-service`, P04 `my_fin_structure`, P05 `common_reflection`, P06 `knowledge` (YouTube answers), P07 `tires`/`wires`, P08 `talk`, P09 `yt_sync`, P10 `jarvis` (an independent application, out of Autonomy's scope since 2026-11-11; ADR-017).
 
 ## 2. Component specifications
 
@@ -194,7 +194,7 @@ Each entry lists: responsibility · does not · inputs/outputs · APIs · events
 
 | | |
 |---|---|
-| Responsibility | One interface (`LLMProvider` port from `jarvis` [V]) for chat, tools, embeddings, vision; routing by `privacy` (`local_only`, `cloud_ok`), task class, cost, latency; fallback chains; usage accounting |
+| Responsibility | One interface (`complete(ModelRequest)`, ADR-017) for chat, tools, embeddings, vision; routing by `privacy` (`local_only`, `cloud_ok`), task class, cost, latency; fallback chains; usage accounting |
 | Does not | Store prompts beyond telemetry policy; decide authority |
 | Data | Usage records; routing config (versioned) |
 | Failure modes | Cloud down → local model per routing table; no model available → caller receives `unavailable` and must degrade (never block safety) |
@@ -263,7 +263,7 @@ Each entry lists: responsibility · does not · inputs/outputs · APIs · events
 
 | | |
 |---|---|
-| Responsibility | Owner Console (web, mobile-first): goals, grants, pending approvals, audit explorer ("why did this happen"), suspend/stop; Telegram bot per cell (existing [V]); voice via `jarvis` |
+| Responsibility | Owner Console (web, mobile-first): goals, grants, pending approvals, audit explorer ("why did this happen"), suspend/stop; Telegram bot per cell (existing [V]); voice only as a possible later client of the same APIs |
 | Does not | Contain authority logic — it calls C05/C04/C16 |
 | Acceptance | From a phone, the owner can see every action of the last 7 days with its reason and evidence, and suspend any agent in two taps |
 
