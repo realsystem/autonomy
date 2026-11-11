@@ -162,7 +162,7 @@ By default, **your three working copies, including changes you haven't committed
 
 ## 9. Decisions (owner, 2026-11-11)
 
-1. **Laptop: macOS** (Docker Desktop or OrbStack, Apple silicon). Documentation and defaults target macOS. The scripts keep the portable-bash rule, so Linux works too (it is what CI runs).
+1. **Laptop: macOS** (Docker Desktop or OrbStack; Intel or Apple silicon). Documentation and defaults target macOS. The scripts keep the portable-bash rule, so Linux works too (it is what CI runs).
 2. **One edge node only.** One lab bot; no `--nodes` option. Fleet testing stays in edge_server's unit tests.
 3. **`farm` profile off by default**; `lab.sh up --farm` turns it on.
 4. **CI:** `lab verify` on pull requests in autonomy, nightly in processor and edge_server.
