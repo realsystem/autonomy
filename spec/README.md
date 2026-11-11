@@ -1,6 +1,6 @@
-# Autonomy contracts — `spec` v0.4.0
+# Autonomy contracts — `spec` v0.5.0
 
-**Status:** v0.3.0 draft (M1 contracts, M3 registry, M5 policy bundle, M6 approvals and control orders) · 2026-11-08 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
+**Status:** v0.5.0 draft (M1 contracts, M3 registry, M5 policy bundle, M6 approvals and control orders, M9 audit trace ids) · 2026-11-08 · Source of truth for the contracts described in [design/component-contracts.md](../design/component-contracts.md). Where the two disagree, this folder wins and the design doc is corrected.
 
 A component joins Autonomy by passing these schemas and rules in its own CI — no core component is modified.
 

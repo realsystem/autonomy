@@ -350,3 +350,90 @@ def test_produced_artifacts_are_clean(tmp_path):
         assert token not in f.read_text(), f
     assert r.text(token) == "[REDACTED]"
     assert stat.S_IMODE(0o600) == 0o600
+
+
+def test_it81_adapter_errors_do_not_leak(tmp_path):
+    """An adapter echoing a credential in its error: records and audit stay clean."""
+    import autonomy_core as ac
+    from autonomy_core.gateway import ActionGateway, MockAdapter
+    from autonomy_core.telemetry import REDACTOR
+    from test_pdp_gateway import PDP_KEYS, Clock, key, pdp, permit_bundle, proposal, request
+
+    secret = "hA9sK2mQ7vL4xP1zR8tY5wE3"
+    REDACTOR.register(secret)
+
+    class Leaky(MockAdapter):
+        def execute(self, action_id, action):
+            raise RuntimeError(f"401 Unauthorized for token {secret}")
+
+    clock = Clock()
+    audit = ac.AuditLog(
+        tmp_path / "audit.jsonl",
+        cell="field-station",
+        actor="svc:action-gateway@field-station",
+        key=key("svc:action-gateway"),
+    )
+    gw = ActionGateway(
+        executor="svc:action-gateway@field-station",
+        key=key("svc:action-gateway"),
+        state_dir=tmp_path / "gw",
+        pdp_keys=PDP_KEYS,
+        registry=None,
+        adapters=[Leaky("adapter:ha@field-station", {"ha.helper.set"})],
+        audit=audit,
+        clock=clock,
+    )
+    p = proposal(key_suffix="leak")
+    rec = gw.execute(
+        {
+            "action_id": "act_leak",
+            "proposal": p,
+            "decision": pdp(permit_bundle(), clock).decide(request(p)),
+            "idempotency_key": p["idempotency_key"],
+        }
+    )
+    assert rec["status"] == "failed"
+    everything = (
+        json.dumps(rec)
+        + (tmp_path / "audit.jsonl").read_text()
+        + (tmp_path / "gw" / "actions.jsonl").read_text()
+    )
+    assert secret not in everything
+
+
+REPO = Path(__file__).resolve().parents[3]
+
+
+def test_sops_check(tmp_path, capsys):
+    enc = "ENC[AES256_GCM,data:3q2+7w==,iv:YWJjZGVmZ2hpamtsbW5vcA==,tag:MTIzNDU2Nzg5MDEyMzQ1Ng==,type:str]"
+    good = {
+        "telegram": {"token": enc},
+        "port_unencrypted": 8080,
+        "sops": {"age": [{"recipient": "age1xyz"}], "unencrypted_suffix": "_unencrypted"},
+    }
+    assert sec.check_sops(good) == []
+    assert sec.check_sops({"telegram": {"token": "plain"}, "sops": {"age": [{"recipient": "age1"}]}}) == [
+        "$.telegram.token is not encrypted"
+    ]
+    assert "no sops metadata" in sec.check_sops({"a": 1})[0]
+    assert "no age recipients" in sec.check_sops({"sops": {"pgp": []}})[0]
+    (tmp_path / "ok.enc.json").write_text(json.dumps(good))
+    (tmp_path / "bad.enc.json").write_text(json.dumps({"x": "plain"}))
+    assert cli(["secrets", "check-sops", str(tmp_path / "ok.enc.json")]) == 0
+    assert cli(["secrets", "check-sops", str(tmp_path / "ok.enc.json"), str(tmp_path / "bad.enc.json")]) == 1
+    capsys.readouterr()
+
+
+def test_hub_collector_config_is_consistent():
+    yaml = pytest.importorskip("yaml")
+    cfg = yaml.safe_load((REPO / "ops" / "hub" / "otel-collector.yaml").read_text())
+    for name, pipe in cfg["service"]["pipelines"].items():
+        for section in ("receivers", "processors", "exporters"):
+            missing = [c for c in pipe.get(section, []) if c not in cfg[section]]
+            assert not missing, (name, section, missing)
+    assert "otlpjsonfile" in cfg["service"]["pipelines"]["traces"]["receivers"]  # reads Tracer span files
+
+
+def test_audit_trace_id_is_in_the_schema():
+    schema = json.loads((REPO / "spec" / "schemas" / "v0" / "audit-record.schema.json").read_text())
+    assert schema["properties"]["trace_id"]["pattern"] == "^[0-9a-f]{32}$"

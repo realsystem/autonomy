@@ -2,6 +2,10 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
+## 0.5.0 — unreleased (M9)
+
+- `audit-record.trace_id` (optional): the W3C trace id of the action story (IT-71).
+
 ## 0.4.0 — unreleased (M6)
 
 Backward compatible with 0.3.

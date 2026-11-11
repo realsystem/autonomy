@@ -1,0 +1,59 @@
+# OpenTelemetry Collector for the hub cell (C17, design/observability-and-operations.md §2).
+# Cells write JSON-line logs and OTLP/JSON span files (autonomy_core.telemetry); the hub
+# collector reads its own files, receives OTLP from other cells when the link is up, and
+# exports traces to Jaeger (or Tempo) and metrics to Prometheus. Pin the collector version.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  otlpjsonfile:
+    include: [/var/lib/autonomy/*/traces.jsonl]
+    start_at: beginning
+  filelog:
+    include: [/var/lib/autonomy/*/logs/*.jsonl]
+    start_at: end
+    operators:
+      - type: json_parser
+        timestamp: {parse_from: attributes.ts, layout_type: gotime, layout: "2006-01-02T15:04:05Z07:00"}
+        severity: {parse_from: attributes.level}
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 200
+  batch: {}
+  # defence in depth: the libraries redact secrets already (IT-81)
+  redaction:
+    allow_all_keys: true
+    blocked_values:
+      - "\\b\\d{8,10}:[A-Za-z0-9_-]{35}\\b"
+      - "(?i)bearer\\s+[A-Za-z0-9._~+/-]{20,}"
+      - "AGE-SECRET-KEY-1[0-9A-Z]{58}"
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: {insecure: true}
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  file/archive:
+    path: /var/lib/autonomy/hub/telemetry-archive.jsonl
+    rotation: {max_megabytes: 100, max_days: 30}
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, otlpjsonfile]
+      processors: [memory_limiter, redaction, batch]
+      exporters: [otlp/jaeger, file/archive]
+    logs:
+      receivers: [otlp, filelog]
+      processors: [memory_limiter, redaction, batch]
+      exporters: [file/archive]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

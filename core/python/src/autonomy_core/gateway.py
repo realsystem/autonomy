@@ -293,7 +293,7 @@ class ActionGateway:
             except SystemExit:
                 raise
             except Exception as exc:  # an adapter bug is a failed action, not a crash
-                result = AdapterResult("failed", error=f"{type(exc).__name__}: {exc}"[:300])
+                result = AdapterResult("failed", error=_redact(f"{type(exc).__name__}: {exc}")[:300])
             if result.status == "started":
                 entry["async"] = True
                 return self._record(entry, "started", result)
@@ -447,7 +447,7 @@ class ActionGateway:
             {
                 "action_id": aid if aid.startswith("act_") else "act_invalid",
                 "status": "rejected",
-                "error": {"code": code, "message": why.detail or why.reason, "retryable": retryable},
+                "error": {"code": code, "message": _redact(why.detail or why.reason), "retryable": retryable},
             }
         )
         log.warning("gateway: rejected %s: %s", aid, why)
@@ -478,6 +478,7 @@ class ActionGateway:
         if result.after is not None:
             rec["after_reported"] = result.after
         rec["verification_pending"] = bool(entry.get("verify")) and status == "succeeded"
+        result.error = _redact(result.error)  # adapters may echo credentials in errors (IT-81)
         if status == "failed" or status == "unknown":
             rec["error"] = {
                 "code": "unavailable.adapter" if status == "failed" else "internal.unknown_outcome",
@@ -523,12 +524,18 @@ class ActionGateway:
         try:
             self.audit.append(
                 kind,
-                summary=summary,
+                summary=_redact(summary),
                 correlationid=str(entry.get("correlationid") or "corr_unknown"),
                 refs=refs,
             )
         except OSError as exc:
             log.error("gateway: audit append failed: %s", exc)
+
+
+def _redact(text: str) -> str:
+    from .telemetry import REDACTOR
+
+    return REDACTOR.text(text)
 
 
 def _refs(req: Mapping[str, Any]) -> dict[str, str]:

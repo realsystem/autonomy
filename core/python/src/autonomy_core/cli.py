@@ -408,6 +408,19 @@ def cmd_scan(args: argparse.Namespace) -> int:
     return 1 if findings else 0
 
 
+def cmd_check_sops(args: argparse.Namespace) -> int:
+    from .secrets import check_sops
+
+    bad = 0
+    for path in args.files:
+        problems = check_sops(load_doc(Path(path)))
+        for p in problems:
+            print(f"{path}: {p}")
+        bad += bool(problems)
+    print(f"{'FAIL' if bad else 'PASS'}: {bad} of {len(args.files)} file(s) not properly encrypted")
+    return 1 if bad else 0
+
+
 def cmd_trace(args: argparse.Namespace) -> int:
     from .telemetry import read_spans, reconstruct
 
@@ -443,6 +456,9 @@ def main(argv: list[str] | None = None) -> int:
         "--allowlist", help="'<glob> [rule]' lines of expected test data (default .secrets-allowlist)"
     )
     p.set_defaults(func=cmd_scan)
+    p = sec.add_parser("check-sops", help="check that files meant to be SOPS/age encrypted are (ADR-013)")
+    p.add_argument("files", nargs="+")
+    p.set_defaults(func=cmd_check_sops)
     p = sub.add_parser("trace", help="reconstruct an action story from the audit log and traces (IT-71)")
     p.add_argument("correlationid")
     p.add_argument("--audit", required=True, help="audit JSON Lines file")

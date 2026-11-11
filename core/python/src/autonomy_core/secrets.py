@@ -236,3 +236,38 @@ def scan(
             rel = _relative(f, base) or _relative(f, p if p.is_dir() else p.parent) or str(f)
             findings += [x for x in scan_text(text, rel) if not _allowed(rel, x.rule, allow)]
     return findings
+
+
+# --- SOPS (ADR-013) ------------------------------------------------------------------------
+
+_SOPS_VALUE = re.compile(
+    r"^ENC\[AES256_GCM,data:[A-Za-z0-9+/=]*,iv:[A-Za-z0-9+/=]+,tag:[A-Za-z0-9+/=]+,type:[a-z]+\]$"
+)
+
+
+def check_sops(doc: Any) -> list[str]:
+    """Problems with a document that must be SOPS-encrypted for age recipients: every
+    value encrypted except keys ending in ``unencrypted_suffix``. Empty: fine."""
+    if not isinstance(doc, dict) or not isinstance(doc.get("sops"), dict):
+        return ["no sops metadata: encrypt with `sops --encrypt --age <recipient>`"]
+    meta = doc["sops"]
+    problems: list[str] = []
+    if not meta.get("age"):
+        problems.append("sops metadata has no age recipients (ADR-013 uses age)")
+    suffix = str(meta.get("unencrypted_suffix", "_unencrypted"))
+
+    def walk(value: Any, path: str) -> None:
+        if isinstance(value, dict):
+            for k, v in value.items():
+                if not (isinstance(k, str) and k.endswith(suffix)):
+                    walk(v, f"{path}.{k}")
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                walk(v, f"{path}[{i}]")
+        elif value is not None and not (isinstance(value, str) and _SOPS_VALUE.match(value)):
+            problems.append(f"{path} is not encrypted")
+
+    for k, v in doc.items():
+        if k != "sops" and not k.endswith(suffix):
+            walk(v, f"$.{k}")
+    return problems

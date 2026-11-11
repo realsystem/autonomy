@@ -1,0 +1,23 @@
+# Hub telemetry (optional): collector + Jaeger. Retention: traces 7 d (Jaeger badger TTL).
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/autonomy:/var/lib/autonomy
+    ports: ["4317:4317", "4318:4318", "8889:8889"]
+    restart: unless-stopped
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      SPAN_STORAGE_TYPE: badger
+      BADGER_EPHEMERAL: "false"
+      BADGER_SPAN_STORE_TTL: 168h
+      BADGER_DIRECTORY_VALUE: /badger/data
+      BADGER_DIRECTORY_KEY: /badger/key
+    volumes: ["jaeger:/badger"]
+    ports: ["16686:16686"]
+    restart: unless-stopped
+volumes:
+  jaeger: {}
