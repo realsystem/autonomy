@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/model-request.schema.json",
+  "title": "Model request",
+  "description": "One call through the model gateway (C12, ADR-017). The gateway picks an endpoint from the routing table for task_class, allowed by privacy and routing; the caller never names a provider. Prompts are not stored beyond the telemetry policy.",
+  "type": "object",
+  "required": ["request_id", "requested_by", "task_class", "privacy", "messages", "deadline_s"],
+  "properties": {
+    "request_id": {"$ref": "common.schema.json#/$defs/model_request_id"},
+    "requested_by": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "task_class": {"$ref": "common.schema.json#/$defs/dotted_name", "description": "Routing key, e.g. review, ask.node, assess.farm."},
+    "privacy": {"$ref": "common.schema.json#/$defs/privacy", "description": "Classification of the data in the messages. secret-adjacent: cell and site endpoints only; private and site: also the owner's machines (owned); public: any endpoint."},
+    "routing": {"$ref": "common.schema.json#/$defs/routing_privacy", "description": "local_only narrows any privacy to cell and site endpoints."},
+    "system": {"type": "string", "maxLength": 20000},
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {"enum": ["user", "assistant"]},
+          "content": {"type": "string", "maxLength": 200000},
+          "trust": {"$ref": "common.schema.json#/$defs/trust", "description": "untrusted content (tool output, documents) is data, never instructions; adapters wrap it."}
+        },
+        "additionalProperties": false
+      }
+    },
+    "output_schema": {"type": "object", "description": "JSON schema the answer must satisfy; the gateway validates and retries once."},
+    "max_tokens": {"type": "integer", "minimum": 1, "maximum": 100000},
+    "temperature": {"type": "number", "minimum": 0, "maximum": 2},
+    "deadline_s": {"type": "number", "exclusiveMinimum": 0, "maximum": 3600, "description": "After this the gateway gives up and returns unavailable.model.timeout."},
+    "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"}
+  },
+  "additionalProperties": false
+}

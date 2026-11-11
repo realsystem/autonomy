@@ -454,6 +454,57 @@ def cmd_verify_effect(args: argparse.Namespace) -> int:
     return {"confirmed": 0, "contradicted": 1}.get(v["result"], 2)
 
 
+def cmd_models_check(args: argparse.Namespace) -> int:
+    """Validate a model routing config and show which privacy classes each route serves."""
+    from .models import PRIVACY, ModelGateway
+
+    try:
+        gw = ModelGateway.from_config(load_doc(Path(args.config)))
+    except (ValueError, TypeError) as e:
+        print(f"FAIL: {e}")
+        return 1
+    for name, ep in gw.endpoints.items():
+        print(f"endpoint {name}: {ep.kind} {ep.url or '-'} ({ep.locality}), model {ep.model or 'default'}")
+    for task in gw.routes:
+        cells = []
+        for privacy in PRIVACY:
+            allowed, _ = gw.chain(task, privacy)
+            cells.append(f"{privacy}: {' > '.join(e.name for e in allowed) or 'REFUSED'}")
+        print(f"route {task}: " + "; ".join(cells))
+    print(f"PASS: {len(gw.endpoints)} endpoint(s), {len(gw.routes)} route(s)")
+    return 0
+
+
+def cmd_models_ask(args: argparse.Namespace) -> int:
+    from .models import ModelGateway, ModelUnavailable
+
+    gw = ModelGateway.from_config(load_doc(Path(args.config)))
+    try:
+        r = gw.complete(
+            {
+                "requested_by": args.requested_by,
+                "task_class": args.task,
+                "privacy": args.privacy,
+                "messages": [{"role": "user", "content": args.question}],
+                "deadline_s": args.deadline,
+            }
+        )
+    except ModelUnavailable as e:
+        print(json.dumps(e.usage, indent=2))
+        print(f"UNAVAILABLE: {e}")
+        return 1
+    print(r.content)
+    print(f"-- {r.endpoint} ({r.locality}) {r.model}, {r.usage.get('duration_ms')} ms", file=sys.stderr)
+    return 0
+
+
+def cmd_models_usage(args: argparse.Namespace) -> int:
+    from .models import usage_today
+
+    print(json.dumps(usage_today(Path(args.usage), args.who, args.day), indent=2))
+    return 0
+
+
 def cmd_check_sops(args: argparse.Namespace) -> int:
     from .secrets import check_sops
 
@@ -505,6 +556,25 @@ def main(argv: list[str] | None = None) -> int:
     p = sec.add_parser("check-sops", help="check that files meant to be SOPS/age encrypted are (ADR-013)")
     p.add_argument("files", nargs="+")
     p.set_defaults(func=cmd_check_sops)
+    mdl = sub.add_parser(
+        "models", help="C12 model gateway: check a routing config, ask, usage"
+    ).add_subparsers(dest="sub", required=True)
+    p = mdl.add_parser("check", help="validate a routing config (YAML/JSON) and show routes per privacy")
+    p.add_argument("config")
+    p.set_defaults(func=cmd_models_check)
+    p = mdl.add_parser("ask", help="one question through the gateway")
+    p.add_argument("config")
+    p.add_argument("question")
+    p.add_argument("--task", default="ask")
+    p.add_argument("--privacy", default="private", choices=["public", "site", "private", "secret-adjacent"])
+    p.add_argument("--requested-by", default="owner:cli")
+    p.add_argument("--deadline", type=float, default=120)
+    p.set_defaults(func=cmd_models_ask)
+    p = mdl.add_parser("usage", help="today's totals from a usage log")
+    p.add_argument("usage")
+    p.add_argument("--who")
+    p.add_argument("--day", help="YYYY-MM-DD (default today, UTC)")
+    p.set_defaults(func=cmd_models_usage)
     p = sub.add_parser("evaluate", help="C13: evaluate a proposal file; exit 0 ok, 1 escalate, 2 reject")
     p.add_argument("proposal")
     p.add_argument("--risk", required=True, choices=["R0", "R1", "R2", "R3"])

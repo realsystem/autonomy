@@ -71,6 +71,11 @@
       "type": "string",
       "enum": ["public", "site", "private", "secret-adjacent"]
     },
+    "locality": {
+      "description": "Where a model endpoint runs (ADR-017). cell: this machine. site: this LAN. owned: the owner's machines at other sites, reached only over the owner's private network. cloud: a third party.",
+      "type": "string",
+      "enum": ["cell", "site", "owned", "cloud"]
+    },
     "routing_privacy": {
       "description": "Where processing may happen. local_only: never leaves the originating cell. cloud_ok: may use cloud providers or remote workers.",
       "type": "string",
@@ -128,6 +133,7 @@
     "approval_id": {"type": "string", "pattern": "^apr_[A-Za-z0-9_-]{1,64}$"},
     "action_id": {"type": "string", "pattern": "^act_[A-Za-z0-9_-]{1,64}$"},
     "verification_id": {"type": "string", "pattern": "^ver_[A-Za-z0-9_-]{1,64}$"},
+    "model_request_id": {"type": "string", "pattern": "^mdl_[A-Za-z0-9_-]{1,64}$"},
     "grant_id": {"type": "string", "pattern": "^grt_[A-Za-z0-9_-]{1,64}$"},
     "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9_-]{1,64}$"},
     "idempotency_key": {

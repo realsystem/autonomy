@@ -2,6 +2,14 @@
 
 Releases are tagged `spec-vX.Y.Z`. Rules: [README.md#versioning](README.md#versioning).
 
+## 0.6.0 — unreleased (M7)
+
+Backward compatible with 0.5.
+
+- New schemas `model-request` and `model-usage` (contract `model`, ADR-017). A request names a task class and the data's privacy, never a provider. Usage records where the request went, what it cost and every attempt, with no prompt text.
+- `common`: `model_request_id` (`mdl_…`) and `locality` (`cell`, `site`, `owned`, `cloud`).
+- `manifest.agent` (optional, agents only): the read tools the agent host binds, `quarantined`, and `budgets` (tokens, model calls and proposals per day; run seconds). Conformance: an agent section only on agents, and a quarantined agent cannot propose actions.
+
 ## 0.5.0 — unreleased (M9)
 
 - `audit-record.trace_id` (optional): the W3C trace id of the action story (IT-71).

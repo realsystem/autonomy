@@ -1,0 +1,16 @@
+{
+  "request_id": "mdl_01JC9Q40000000000000000001",
+  "requested_by": "agent:field-station@field-station",
+  "task_class": "assess.farm",
+  "privacy": "private",
+  "outcome": "timeout",
+  "attempts": [
+    {
+      "endpoint": "home-gpu",
+      "outcome": "timeout",
+      "error": "no worker answered within 120 s"
+    }
+  ],
+  "at": "2026-11-06T18:20:11Z",
+  "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R"
+}

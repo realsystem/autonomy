@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/model-usage.schema.json",
+  "title": "Model usage",
+  "description": "What one model request cost and where it went (C12 usage accounting, budgets, C17). No prompt or answer text.",
+  "type": "object",
+  "required": ["request_id", "requested_by", "task_class", "privacy", "outcome", "attempts", "at"],
+  "properties": {
+    "request_id": {"$ref": "common.schema.json#/$defs/model_request_id"},
+    "requested_by": {"$ref": "common.schema.json#/$defs/component_ref"},
+    "task_class": {"$ref": "common.schema.json#/$defs/dotted_name"},
+    "privacy": {"$ref": "common.schema.json#/$defs/privacy"},
+    "outcome": {
+      "enum": ["ok", "unavailable", "timeout", "invalid_output", "refused", "budget_exceeded"],
+      "description": "refused: no endpoint is allowed for this privacy. budget_exceeded: the caller's daily budget is spent."
+    },
+    "endpoint": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$", "description": "The endpoint that answered (outcome ok)."},
+    "locality": {"$ref": "common.schema.json#/$defs/locality"},
+    "model": {"type": "string", "maxLength": 200},
+    "prompt_tokens": {"type": "integer", "minimum": 0},
+    "completion_tokens": {"type": "integer", "minimum": 0},
+    "duration_ms": {"type": "integer", "minimum": 0},
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["endpoint", "outcome"],
+        "properties": {
+          "endpoint": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+          "outcome": {"enum": ["ok", "unavailable", "timeout", "invalid_output", "skipped_breaker_open"]},
+          "error": {"type": "string", "maxLength": 300}
+        },
+        "additionalProperties": false
+      }
+    },
+    "at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "correlationid": {"$ref": "common.schema.json#/$defs/correlationid"}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {"if": {"properties": {"outcome": {"const": "ok"}}}, "then": {"required": ["endpoint", "locality", "model"]}}
+  ]
+}

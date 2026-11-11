@@ -25,7 +25,9 @@ check                  fails when                                               
 Stale inputs are never ``ok`` (M8 acceptance). The reviewer is advisory: it runs only when
 the deterministic outcome is not ``reject``, and whatever it says, the outcome can move from
 ``ok`` to ``escalate`` and never back (an LLM never approves and never silently drops a
-proposal; the owner sees what it objected to).
+proposal; the owner sees what it objected to). A reviewer that has no model to ask raises
+``ReviewUnavailable``: the review is recorded as skipped and does not block (ST-03); any
+other failure escalates.
 """
 
 from __future__ import annotations
@@ -87,6 +89,11 @@ class Review:
     verdict: str
     note: str = ""
     model: str | None = None
+
+
+class ReviewUnavailable(Exception):
+    """The reviewer has no model to ask right now (provider outage): the review is skipped,
+    recorded, and does not block (ST-03)."""
 
 
 class Reviewer(Protocol):
@@ -306,7 +313,9 @@ class Evaluator:
         assert self.reviewer is not None
         try:
             r = self.reviewer(p, [c.as_dict() for c in checks])
-        except Exception as exc:  # unavailable reviewer: do not pretend it agreed
+        except ReviewUnavailable as exc:  # no model: deterministic checks only (ST-03)
+            return Check("llm_review", True, f"skipped: {exc}"[:500], advisory=True)
+        except Exception as exc:  # a broken reviewer: do not pretend it agreed
             return Check("llm_review", False, f"review unavailable: {type(exc).__name__}", advisory=True)
         verdict = getattr(r, "verdict", None)
         model = getattr(r, "model", None)

@@ -2,6 +2,25 @@
 
 Python releases are tagged `core-vX.Y.Z`, Go releases `core/go/vX.Y.Z` ([ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)).
 
+## 0.7.0 — unreleased (M7)
+
+- **Model gateway (C12, ADR-017):** `ModelGateway.complete(request)` takes a task class and the data's privacy, never a provider.
+  - Endpoints declare a locality (`cell`, `site`, `owned`, `cloud`). Privacy decides which localities may see the data, checked before connecting and again by a per-endpoint host allowlist (IT-83).
+  - Routes are tried in order, with a circuit breaker per endpoint. `ModelUnavailable` carries a code: `unavailable.model`, `.timeout`, `.invalid_output`, `policy.model_refused` or `budget.exceeded`.
+  - Per-component daily budgets for tokens and calls survive restarts through the usage log. The log holds model-usage records with no prompt text.
+  - Structured output: an `output_schema` answer is validated and retried once.
+  - Untrusted content is fenced as data.
+  - Adapters use no SDKs: `processor` (an `llm.chat` job; sensitive data as a `sensitive` job with a short retention; idempotent per request and endpoint; long-poll; cancel on deadline or stop), `openai` (any OpenAI-compatible server), `anthropic`, and `FakeProvider` for tests.
+- **Agent host (C11):** `AgentHost.register(manifest, run)` and `run(agent, trigger)`.
+  - Tools are bound from `manifest.agent.tools`, and their results stay data, with trust.
+  - `ctx.ask` uses the agent's privacy and budgets.
+  - `ctx.propose` only allows action types from `proposes_actions`, nothing for quarantined agents, and at most `proposals_per_day`; proposals go to `submit`.
+  - Suspension or the run's time budget cancels the in-flight model call (the processor job too) and withdraws the agent's pending proposals.
+  - The audit log gets `agent.started`, `agent.finished`, `agent.suspended` and `agent.budget_exceeded`.
+- **`ModelReviewer`:** the M8 reviewer hook on the gateway (task class `review`, private, JSON verdict). With no model, `ReviewUnavailable` makes the evaluator record the review as skipped without blocking (ST-03). An unusable answer still escalates.
+- **CLI:** `autonomy models check | ask | usage`. Example config: `ops/models.example.yaml`.
+- `SPEC_VERSION` is 0.6.0 (model-request, model-usage, `manifest.agent`).
+
 ## 0.6.0 — unreleased (M8)
 
 - Evaluator (C13): `Evaluator.evaluate(proposal, risk_class=)` returns a spec Evaluation. It runs these deterministic checks: schema, input freshness, trust, invariants per action type (`value_range`, `allowed_targets`, or your own), conflicts with open proposals, whether the effect is verifiable, and reversibility. Stale or future inputs are rejected and never `ok`. An optional reviewer (an LLM hook) runs only when nothing was rejected, and can only turn `ok` into `escalate`: errors and unknown answers escalate too. Each evaluation is audited as `action.evaluated`.

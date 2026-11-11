@@ -80,6 +80,19 @@
         "cpu": 0.5
       }
     },
+    "agent": {
+      "tools": [
+        "ha.state.read",
+        "knowledge.search"
+      ],
+      "quarantined": false,
+      "budgets": {
+        "tokens_per_day": 200000,
+        "model_calls_per_day": 200,
+        "proposals_per_day": 10,
+        "run_seconds": 300
+      }
+    },
     "dependencies": [
       "svc:model-gateway",
       "adapter:ha@field-station",
