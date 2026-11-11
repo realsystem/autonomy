@@ -1,6 +1,6 @@
 # ADR-017: Model Gateway and Agent Host built in `autonomy-core`; `jarvis` out of scope
 
-**Status:** Proposed · 2026-11-11 · supersedes [ADR-012](ADR-012-model-gateway-library.md) when accepted
+**Status:** Accepted · 2026-11-11 · supersedes [ADR-012](ADR-012-model-gateway-library.md)
 
 ## Context
 

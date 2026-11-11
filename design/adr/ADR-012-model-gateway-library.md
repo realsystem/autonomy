@@ -1,6 +1,6 @@
 # ADR-012: Model Gateway as a library from `jarvis`; no agent framework dependency
 
-**Status:** Accepted · 2026-11-06 · *to be superseded by [ADR-017](ADR-017-model-gateway-and-agent-host-in-core.md) (Proposed): `jarvis` is out of scope since 2026-11-11, so C12 is no longer seeded from it*
+**Status:** Superseded by [ADR-017](ADR-017-model-gateway-and-agent-host-in-core.md) · 2026-11-11 (`jarvis` out of scope)
 
 ## Context
 
