@@ -183,7 +183,7 @@ ok() { echo "ok"; }
 cmd_verify() {
   mock_on || die "verify needs the mocked Telegram API: ops/lab/lab.sh up --mock-telegram"
   local log="$LAB_DIR/processor/mock-llm/mock-llm.jsonl" code
-  : > "$log" 2>/dev/null || true
+  { : > "$log"; } 2>/dev/null || true
 
   step status;   tg POST /_lab/clear '{}' >/dev/null; cmd_say "/status"; wait_reply 'edge server' 60; ok
 
