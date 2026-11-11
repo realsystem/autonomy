@@ -1,0 +1,55 @@
+{
+  "name": "st12-no-flow",
+  "kind": "verification",
+  "description": "ST-12: OpenSprinkler accepted the zone run (succeeded) but the flow meter, an independent path, reads 0 throughout: contradicted, incident opened, no undo (irreversible).",
+  "action": {
+    "type": "opensprinkler.zone.run",
+    "target": "zone.tree_row",
+    "params": {
+      "minutes": 20
+    }
+  },
+  "expected_effect": {
+    "kind": "state_within",
+    "entity": "sensor.farm_main_flow_lpm",
+    "min": 2.0,
+    "within_s": 180
+  },
+  "verification": {
+    "probe": "flow.meter",
+    "independent": true
+  },
+  "reversibility": {
+    "irreversible": true,
+    "note": "water delivered cannot be taken back"
+  },
+  "record": {
+    "status": "succeeded"
+  },
+  "probe": {
+    "name": "flow.meter",
+    "independent": true,
+    "path": "observation.flow_meter"
+  },
+  "observations": [
+    {
+      "at_s": 30,
+      "value": 0.0
+    },
+    {
+      "at_s": 90,
+      "value": 0.0
+    },
+    {
+      "at_s": 170,
+      "value": 0.1
+    }
+  ],
+  "check_at_s": 200,
+  "expect": {
+    "result": "contradicted",
+    "independent": true,
+    "incident": true,
+    "undo_value": null
+  }
+}

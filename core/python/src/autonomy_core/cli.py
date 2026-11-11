@@ -408,6 +408,52 @@ def cmd_scan(args: argparse.Namespace) -> int:
     return 1 if findings else 0
 
 
+def _when(text: str | None) -> float:
+    return parse_rfc3339(text) if text else time.time()
+
+
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    """C13 over proposal files (integration-strategy: "Evaluator CLI over proposal files")."""
+    from .evaluator import Evaluator
+
+    others = [load_doc(Path(f)) for f in args.open or []]
+    now = _when(args.now)
+    e = Evaluator(clock=lambda: now, open_proposals=lambda: others).evaluate(
+        load_doc(Path(args.proposal)), risk_class=args.risk
+    )
+    print(json.dumps(e, indent=2))
+    return {"ok": 0, "escalate": 1, "reject": 2}[e["outcome"]]
+
+
+def cmd_verify_effect(args: argparse.Namespace) -> int:
+    """C14 over a proposal, its ExecutionRecord and recorded observations."""
+    from .keys import generate_private_key
+    from .verifier import Observation, Probe, Verifier
+
+    prop = load_doc(Path(args.proposal))
+    record = load_doc(Path(args.record))
+    obs = [
+        Observation(str(o["ref"]), o.get("value"), parse_rfc3339(str(o["observed_at"])), str(o["path"]))
+        for o in load_doc(Path(args.observations))
+    ]
+    now = _when(args.now)
+    probe = str((prop.get("verification") or {}).get("probe", "recorded.observations"))
+    key = load_private_key(Path(args.key)) if args.key else generate_private_key()
+    v = Verifier(
+        verifier=args.verifier,
+        key=key,
+        probes={probe: Probe(lambda e, a, since: [o for o in obs if o.observed_at <= now], args.independent)},
+        clock=lambda: now,
+    ).check(prop, record, final=args.final)
+    if v is None:
+        print(json.dumps({"result": "pending", "note": "window still open; ask again later"}))
+        return 3
+    if not args.key:
+        v.pop("signature", None)  # signed with a throwaway key: meaningless
+    print(json.dumps(v, indent=2))
+    return {"confirmed": 0, "contradicted": 1}.get(v["result"], 2)
+
+
 def cmd_check_sops(args: argparse.Namespace) -> int:
     from .secrets import check_sops
 
@@ -459,6 +505,28 @@ def main(argv: list[str] | None = None) -> int:
     p = sec.add_parser("check-sops", help="check that files meant to be SOPS/age encrypted are (ADR-013)")
     p.add_argument("files", nargs="+")
     p.set_defaults(func=cmd_check_sops)
+    p = sub.add_parser("evaluate", help="C13: evaluate a proposal file; exit 0 ok, 1 escalate, 2 reject")
+    p.add_argument("proposal")
+    p.add_argument("--risk", required=True, choices=["R0", "R1", "R2", "R3"])
+    p.add_argument("--now", help="RFC 3339 time to evaluate at (default: now)")
+    p.add_argument("--open", nargs="*", help="other open proposals, for the conflict check")
+    p.set_defaults(func=cmd_evaluate)
+    p = sub.add_parser(
+        "verify",
+        help="C14: verify an executed action against recorded observations; "
+        "exit 0 confirmed, 1 contradicted, 2 otherwise, 3 window still open",
+    )
+    p.add_argument("proposal")
+    p.add_argument("record", help="the ExecutionRecord")
+    p.add_argument("--observations", required=True, help="JSON list of {ref, value, observed_at, path}")
+    p.add_argument("--now", help="RFC 3339 time to verify at (default: now)")
+    p.add_argument("--final", action="store_true", help="decide even if the window is still open")
+    p.add_argument(
+        "--independent", action="store_true", help="the observations come from an independent path"
+    )
+    p.add_argument("--verifier", default="svc:verifier")
+    p.add_argument("--key", help="verifier private key (PEM); without it the result is unsigned")
+    p.set_defaults(func=cmd_verify_effect)
     p = sub.add_parser("trace", help="reconstruct an action story from the audit log and traces (IT-71)")
     p.add_argument("correlationid")
     p.add_argument("--audit", required=True, help="audit JSON Lines file")

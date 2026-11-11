@@ -1,0 +1,48 @@
+{
+  "name": "st12-flow-ok",
+  "kind": "verification",
+  "description": "The same run with water flowing: confirmed independently.",
+  "action": {
+    "type": "opensprinkler.zone.run",
+    "target": "zone.tree_row",
+    "params": {
+      "minutes": 20
+    }
+  },
+  "expected_effect": {
+    "kind": "state_within",
+    "entity": "sensor.farm_main_flow_lpm",
+    "min": 2.0,
+    "within_s": 180
+  },
+  "verification": {
+    "probe": "flow.meter",
+    "independent": true
+  },
+  "reversibility": {
+    "irreversible": true
+  },
+  "record": {
+    "status": "succeeded"
+  },
+  "probe": {
+    "name": "flow.meter",
+    "independent": true,
+    "path": "observation.flow_meter"
+  },
+  "observations": [
+    {
+      "at_s": 10,
+      "value": 0.0
+    },
+    {
+      "at_s": 40,
+      "value": 6.2
+    }
+  ],
+  "check_at_s": 60,
+  "expect": {
+    "result": "confirmed",
+    "independent": true
+  }
+}

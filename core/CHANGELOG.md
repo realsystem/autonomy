@@ -2,6 +2,15 @@
 
 Python releases are tagged `core-vX.Y.Z`, Go releases `core/go/vX.Y.Z` ([ADR-015](../design/adr/ADR-015-core-library-location-and-consumption.md)).
 
+## 0.6.0 — unreleased (M8)
+
+- Evaluator (C13): `Evaluator.evaluate(proposal, risk_class=)` returns a spec Evaluation. It runs these deterministic checks: schema, input freshness, trust, invariants per action type (`value_range`, `allowed_targets`, or your own), conflicts with open proposals, whether the effect is verifiable, and reversibility. Stale or future inputs are rejected and never `ok`. An optional reviewer (an LLM hook) runs only when nothing was rejected, and can only turn `ok` into `escalate`: errors and unknown answers escalate too. Each evaluation is audited as `action.evaluated`.
+- Verifier (C14): `Verifier.check(proposal, record)` reads the declared probe and returns a signed Verification (`confirmed`, `contradicted`, `not_confirmed` or `inconclusive`), or `None` while the window is still open. Effect kinds are `state_equals`, `state_within` and `restarted_after`. Observations from before the action started are ignored. `independent` comes from the verifier's knowledge of the probe, not from the proposer. A `contradicted` result also writes `incident.opened` and builds an undo proposal (`undo_proposal`) for `on_contradicted` (ST-12). Results persist in `verifications.jsonl`.
+- Gateway: keeps each action's expectations in its journal, and `awaiting_verification()` lists succeeded actions that are still unverified, across restarts. `Verifier.check_pending(gateway)` checks all of them.
+- CLI: `autonomy evaluate` (exit 0 ok, 1 escalate, 2 reject) and `autonomy verify` (against recorded observations).
+- Recorded scenarios in `core/python/tests/scenarios/`, including ST-12 no-flow.
+- `SPEC_VERSION` is 0.5.0, as M9 left it.
+
 ## 0.5.0 — unreleased (M9)
 
 - Observability (C17): `configure_logging` (spec log-record JSON lines, trace and correlation ids from context), `Redactor` (registered values, secret-shaped text, secret field names), `Tracer` (OTLP/JSON span lines, `traceparent` propagation, offline), `reconstruct` (IT-71). Gateway and PDP emit spans; audit records carry `trace_id`; `gateway.execute(..., traceparent=, correlationid=)`.

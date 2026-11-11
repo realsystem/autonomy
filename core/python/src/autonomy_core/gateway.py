@@ -28,7 +28,7 @@ import logging
 import os
 import threading
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -181,6 +181,7 @@ class ActionGateway:
         self.records: dict[str, dict[str, Any]] = {}  # action_id -> latest record
         self.by_key: dict[str, str] = {}  # idempotency_key -> action_id
         self.started: dict[str, dict[str, Any]] = {}  # action_id -> journal "started" entry
+        self.entries: dict[str, dict[str, Any]] = {}  # action_id -> "started" entry, kept
         self._load()
 
     # -- state
@@ -192,6 +193,7 @@ class ActionGateway:
                 continue
             if e.get("event") == "started":
                 self.started[aid] = e
+                self.entries[aid] = e
                 self.by_key.setdefault(str(e.get("idempotency_key")), aid)
             rec = e.get("record")
             if isinstance(rec, dict):
@@ -228,6 +230,28 @@ class ActionGateway:
 
     def record(self, action_id: str) -> dict[str, Any] | None:
         return self.records.get(action_id)
+
+    def awaiting_verification(self, done: Iterable[str] = ()) -> list[dict[str, Any]]:
+        """Succeeded actions with a ``verify`` obligation that C14 has not settled (ids in
+        ``done``): ``{"record", "proposal", "correlationid", "refs", "traceparent"}`` each, where
+        ``proposal`` carries the action and what the proposer said to expect. Survives restarts."""
+        skip = set(done)
+        out = []
+        with self.lock:
+            for aid, rec in self.records.items():
+                entry = self.entries.get(aid)
+                if aid in skip or entry is None or not rec.get("verification_pending"):
+                    continue
+                out.append(
+                    {
+                        "record": rec,
+                        "proposal": {"action": entry["action"], **dict(entry.get("expect") or {})},
+                        "correlationid": entry.get("correlationid"),
+                        "refs": {**dict(entry.get("refs") or {}), "action": aid},
+                        "traceparent": entry.get("traceparent"),
+                    }
+                )
+        return out
 
     # -- execute
 
@@ -277,6 +301,7 @@ class ActionGateway:
                 "adapter": adapter.name,
                 "refs": _refs(request),
                 "correlationid": corr or "corr_" + aid[4:],
+                "expect": _expect(request),  # what C14 checks afterwards (M8)
             }
             if sp is not None:
                 entry["traceparent"] = sp.traceparent
@@ -285,6 +310,7 @@ class ActionGateway:
             if "dry_run" in obligations:
                 return self._finish(entry, AdapterResult("succeeded", {"dry_run": True}))
             self.started[aid] = entry
+            self.entries[aid] = entry
             self.journal.append(entry)  # write-ahead: a crash after this is reconciled
             self._audit(entry, "action.started", f"{action['type']} on {action['target']} via {adapter.name}")
             try:
@@ -549,6 +575,14 @@ def _refs(req: Mapping[str, Any]) -> dict[str, str]:
         if isinstance(obj, Mapping) and isinstance(obj.get(field_), str):
             refs[name] = obj[field_]
     return refs
+
+
+def _expect(req: Mapping[str, Any]) -> dict[str, Any]:
+    p = req.get("proposal")
+    if not isinstance(p, Mapping):
+        return {}
+    keys = ("proposal_id", "expected_effect", "verification", "reversibility")
+    return {k: p[k] for k in keys if k in p}
 
 
 def _time(text: Any) -> float:

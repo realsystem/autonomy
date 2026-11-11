@@ -1,0 +1,51 @@
+{
+  "name": "helper-stale-evidence",
+  "kind": "verification",
+  "action": {
+    "type": "ha.helper.set",
+    "target": "input_number.farm_irrigation_recommended_climate_factor",
+    "params": {
+      "value": 118
+    }
+  },
+  "expected_effect": {
+    "kind": "state_equals",
+    "entity": "input_number.farm_irrigation_recommended_climate_factor",
+    "value": 118,
+    "within_s": 30
+  },
+  "verification": {
+    "probe": "ha.state",
+    "independent": false
+  },
+  "reversibility": {
+    "undo": {
+      "type": "ha.helper.set",
+      "params": {
+        "value": "previous"
+      }
+    }
+  },
+  "record": {
+    "status": "succeeded",
+    "before": {
+      "value": 104
+    }
+  },
+  "probe": {
+    "name": "ha.state",
+    "independent": false,
+    "path": "ha.state"
+  },
+  "observations": [
+    {
+      "at_s": -20,
+      "value": 118
+    }
+  ],
+  "check_at_s": 40,
+  "expect": {
+    "result": "not_confirmed"
+  },
+  "description": "The only reading of 118 is from before the action started: not evidence."
+}

@@ -13,6 +13,7 @@ from .envelope import (
     verify_envelope,
 )
 from .errors import Reject
+from .evaluator import Check, Evaluator, Review, allowed_targets, value_range
 from .gateway import ActionGateway, AdapterResult, MockAdapter
 from .ids import (
     child_traceparent,
@@ -72,9 +73,10 @@ from .telemetry import (
     current_traceparent,
     reconstruct,
 )
+from .verifier import Observation, Probe, Verifier, undo_proposal
 
-__version__ = "0.5.0"
-SPEC_VERSION = "0.4.0"  # the contracts version implemented
+__version__ = "0.6.0"
+SPEC_VERSION = "0.5.0"  # the contracts version implemented
 
 __all__ = [
     "ActionGateway",
@@ -82,25 +84,32 @@ __all__ = [
     "ApprovalService",
     "AuditLog",
     "CanonicalizationError",
+    "Check",
     "Component",
     "ControlState",
     "Counter",
+    "Evaluator",
     "Freshness",
     "GENESIS_HASH",
     "KeyRing",
     "MockAdapter",
+    "Observation",
     "Outbox",
     "Pdp",
     "Policy",
     "PolicyBundle",
+    "Probe",
     "REDACTOR",
     "Redactor",
     "Registry",
     "RegistryStore",
     "Reject",
+    "Review",
     "SPEC_VERSION",
     "SeenStore",
     "Tracer",
+    "Verifier",
+    "allowed_targets",
     "audit_hash",
     "canonicalize",
     "check_document",
@@ -147,6 +156,8 @@ __all__ = [
     "sign_registry",
     "signing_input",
     "to_rfc3339",
+    "undo_proposal",
+    "value_range",
     "verify",
     "verify_chain",
     "verify_envelope",
