@@ -1,6 +1,6 @@
 # Autonomy lab: the whole system on a laptop
 
-Status: **Draft, decisions recorded (§9)** · 2026-11-11
+Status: **Accepted; built (processor `lab/`, edge_server `lab/`, `ops/lab/lab.sh`)** · 2026-11-11
 
 ## 1. Goal
 
@@ -173,3 +173,15 @@ By default, **your three working copies, including changes you haven't committed
 2. edge_server: `--lab` compose mode, host-stub, `lab/lab.sh`. Can be tested alone with a processor lab running.
 3. autonomy: the orchestrator, lab authority (keys, bundle, routing), smoke checks, scenarios, CI `lab verify`.
 4. Documentation: a "Lab" section in each README; this document becomes *Accepted*.
+
+## 11. As built: where the lab differs from this design
+
+- **Frigate is a stand-in** (`edge_server/lab/frigate-stub`), not the real image (about 1 GB, needs video and a GPU/CPU detector). It serves what the bot reads (`/api/version`, `/api/stats`, `/api/config`), its uptime resets when its container restarts, and `lab.sh cam <name> <fps>` makes a camera lose video. A real-Frigate option can follow.
+- **Compose is rendered by the production functions** (`prepare_telegram_bot`, `create_app_stack`) in a throwaway Ubuntu container with `docker`, `systemctl`, `tailscale`, `iptables` and `ufw` as no-op stubs, then adjusted by `compose.lab.yml` (lab network, stand-ins, no privileged mode or devices). The production `Dockerfile` is unchanged: the lab image is it plus `autonomy-core` from the local checkout (`lab/bot.Dockerfile`, a named build context).
+- **`host-stub` runs the real `service-request.py`** for `/restart` and `/logs`. `/reboot` and `/redeploy` are simulated: a fake `/proc/uptime` the bot reads (`HOST_PROC`), reset on "reboot", refused within 10 minutes of the last one, like the production unit.
+- **`mock-llm` rules are JSON** (`rules.json`), not YAML, to keep it standard-library only. Modes: normal, slow, garbage, echo, error; `down` stops the container. Every request is logged in full.
+- **No lab authority, no A1 grant.** A signed policy bundle needs a registry on the node, which a one-node install does not have (the bot runs the baseline policy), so the lab runs the baseline: `/ask` can suggest a restart but not run it; you run `/restart` with a code. Granting the agent A1 needs registry support on single nodes (later). Model routing is the default one from the job service URL, which contains only the processor endpoint, so nothing can reach a cloud model; `lab.sh check` also fails if a cloud key is in the bot's environment.
+- **Mocked Telegram** (`edge_server/lab/telegram-mock`) for CI and for runs without a bot token; it forgets acknowledged updates like the real API.
+- **Not built yet:** the `farm` profile, `--only` combined with checks beyond each part's own, real Frigate.
+- **CI:** processor is private, so autonomy's lab job needs a repository secret `LAB_REPOS_TOKEN` (read access to realsystem/processor); without it the job is skipped. edge_server and processor run their own parts nightly.
+- **What the lab found already:** the deploy script did not install `assistant.py` (so `/ask` was off on a deployed node). Fixed in edge_server, with a test.
