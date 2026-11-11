@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Needs the LAB_REPOS_TOKEN secret (processor is private)
         if: env.HAS_TOKEN != 'true'
-        run: echo "::notice::LAB_REPOS_TOKEN is not set: the full lab was skipped (see the workflow header)"
+        run: echo "::notice::LAB_REPOS_TOKEN is not set, so the full lab was skipped (see the workflow header)"
       - uses: actions/checkout@v4
         if: env.HAS_TOKEN == 'true'
         with:
