@@ -119,6 +119,25 @@
       },
       "additionalProperties": false
     },
+    "agent": {
+      "description": "Agents only (kind agent): what the agent host (C11) binds and enforces. Authority still comes only from grants.",
+      "type": "object",
+      "properties": {
+        "tools": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/dotted_name"}, "uniqueItems": true, "description": "Read tools the host binds. Actions are never tools: they are proposed (capabilities.proposes_actions)."},
+        "quarantined": {"type": "boolean", "description": "Reads untrusted content: no proposals at all, read tools only."},
+        "budgets": {
+          "type": "object",
+          "properties": {
+            "tokens_per_day": {"type": "integer", "minimum": 0},
+            "model_calls_per_day": {"type": "integer", "minimum": 0},
+            "proposals_per_day": {"type": "integer", "minimum": 0},
+            "run_seconds": {"type": "number", "exclusiveMinimum": 0}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "dependencies": {
       "description": "Components this one needs at runtime (instances allowed). Cycles are rejected when the registry is signed.",
       "type": "array",

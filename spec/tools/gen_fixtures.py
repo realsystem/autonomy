@@ -251,8 +251,34 @@ def manifest_agent() -> dict:
         "data": {"owns": [{"store": "sqlite:/data/agent.db", "kind": "agent_memory", "retention_days": 365}],
                  "reads_from": ["events:observation.ha.*@field-station"]},
         "runtime": {"packaging": ["ha-addon"], "health": {"liveness": "/v1/health", "readiness": "/v1/ready"}, "resources": {"memory_mb": 256, "cpu": 0.5}},
+        "agent": {"tools": ["ha.state.read", "knowledge.search"], "quarantined": False,
+                  "budgets": {"tokens_per_day": 200000, "model_calls_per_day": 200, "proposals_per_day": 10, "run_seconds": 300}},
         "dependencies": ["svc:model-gateway", "adapter:ha@field-station", "cell:field-station"],
     }
+
+
+def model_request(task: str = "assess.farm") -> dict:
+    return {
+        "request_id": "mdl_01JC9Q40000000000000000001", "requested_by": "agent:field-station@field-station",
+        "task_class": task, "privacy": "private",
+        "system": "You assess irrigation needs from sensor data. Answer in JSON.",
+        "messages": [{"role": "user", "content": "Soil moisture tree row 1: 18.4 % (06:20). ET0 yesterday: 5.1 mm.", "trust": "trusted"}],
+        "output_schema": {"type": "object", "required": ["summary"], "properties": {"summary": {"type": "string"}}},
+        "max_tokens": 400, "temperature": 0.2, "deadline_s": 120, "correlationid": CORR,
+    }
+
+
+def model_usage(outcome: str = "ok") -> dict:
+    u = {
+        "request_id": "mdl_01JC9Q40000000000000000001", "requested_by": "agent:field-station@field-station",
+        "task_class": "assess.farm", "privacy": "private", "outcome": outcome,
+        "attempts": [{"endpoint": "home-gpu", "outcome": "ok"}], "at": T0, "correlationid": CORR,
+    }
+    if outcome == "ok":
+        u.update(endpoint="home-gpu", locality="owned", model="qwen2.5:14b", prompt_tokens=212, completion_tokens=96, duration_ms=4120)
+    else:
+        u["attempts"] = [{"endpoint": "home-gpu", "outcome": "timeout", "error": "no worker answered within 120 s"}]
+    return u
 
 
 def job(submission: bool = False) -> dict:
@@ -386,6 +412,8 @@ def valid_fixtures() -> dict[str, dict[str, object]]:
         "registry": {"two-site": registry()},
         "registry-signature": {"ops": registry_signature()},
         "policy-bundle": {"farm": policy_bundle()},
+        "model-request": {"assess-farm": model_request()},
+        "model-usage": {"ok": model_usage(), "timeout": model_usage("timeout")},
     }
 
 
@@ -434,6 +462,19 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
     case(M, "actions-without-lifecycle", "proposing actions needs the action-lifecycle contract", "requires the action-lifecycle contract", m, setp(["contracts", "action-lifecycle"], DELETE))
     case(M, "self-dependency", "no self dependency", "depends on itself", m, setp(["dependencies"], ["agent:field-station@field-station"]))
     case(M, "unknown-field", "manifests are closed to catch typos", "Additional properties", m, setp(["reads_form"], []))
+    case(M, "quarantined-proposer", "quarantined agents only read", "cannot propose actions", m, setp(["agent", "quarantined"], True))
+    case(M, "agent-unknown-budget", "budgets are closed", "Additional properties", m, setp(["agent", "budgets", "dollars"], 5))
+    MR = "model-request"
+    mr = v["model-request"]["assess-farm"]
+    case(MR, "unknown-privacy", "privacy is a known class", "'secret' is not one of", mr, setp(["privacy"], "secret"))
+    case(MR, "system-role-message", "the system prompt goes in system, not messages", "'system' is not one of", mr, setp(["messages", 0, "role"], "system"))
+    case(MR, "no-deadline", "every call has a deadline", "'deadline_s' is a required property", mr, setp(["deadline_s"], DELETE))
+    case(MR, "provider-named", "callers name a task class, never a provider", "Additional properties", mr, setp(["provider"], "openai"))
+    MU = "model-usage"
+    mu = v["model-usage"]["ok"]
+    case(MU, "ok-without-endpoint", "an answer says where it came from", "'endpoint' is a required property", mu, setp(["endpoint"], DELETE))
+    case(MU, "negative-tokens", "token counts are not negative", "minimum", mu, setp(["prompt_tokens"], -1))
+    case(MU, "prompt-text", "usage never carries prompt text", "Additional properties", mu, setp(["prompt"], "Soil moisture ..."))
     case(M, "instance-as-component-id", "manifest ids carry no @cell", "component_id", m, setp(["component_id"], "agent:field-station@field-station"))
 
     G = "grant"

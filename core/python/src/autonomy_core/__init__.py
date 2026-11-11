@@ -1,6 +1,15 @@
 """autonomy-core (C02): the one implementation of Autonomy envelopes, signatures and the
 state behind them. Implements spec v0 (spec/README.md)."""
 
+from .agents import (
+    AgentContext,
+    AgentHost,
+    AgentNotAllowed,
+    AgentStopped,
+    ModelReviewer,
+    RunResult,
+    ToolResult,
+)
 from .approval import ApprovalService, ControlState
 from .audit import AuditLog, verify_chain
 from .envelope import (
@@ -13,7 +22,7 @@ from .envelope import (
     verify_envelope,
 )
 from .errors import Reject
-from .evaluator import Check, Evaluator, Review, allowed_targets, value_range
+from .evaluator import Check, Evaluator, Review, ReviewUnavailable, allowed_targets, value_range
 from .gateway import ActionGateway, AdapterResult, MockAdapter
 from .ids import (
     child_traceparent,
@@ -37,6 +46,15 @@ from .keys import (
     save_private_key,
     sign,
     verify,
+)
+from .models import (
+    AdapterError,
+    Endpoint,
+    FakeProvider,
+    ModelGateway,
+    ModelResult,
+    ModelUnavailable,
+    allowed_localities,
 )
 from .outbox import Outbox
 from .pdp import Pdp, Policy, PolicyBundle, decision_request, load_bundle
@@ -75,12 +93,17 @@ from .telemetry import (
 )
 from .verifier import Observation, Probe, Verifier, undo_proposal
 
-__version__ = "0.6.0"
-SPEC_VERSION = "0.5.0"  # the contracts version implemented
+__version__ = "0.7.0"
+SPEC_VERSION = "0.6.0"  # the contracts version implemented
 
 __all__ = [
     "ActionGateway",
+    "AdapterError",
     "AdapterResult",
+    "AgentContext",
+    "AgentHost",
+    "AgentNotAllowed",
+    "AgentStopped",
     "ApprovalService",
     "AuditLog",
     "CanonicalizationError",
@@ -88,11 +111,17 @@ __all__ = [
     "Component",
     "ControlState",
     "Counter",
+    "Endpoint",
     "Evaluator",
+    "FakeProvider",
     "Freshness",
     "GENESIS_HASH",
     "KeyRing",
     "MockAdapter",
+    "ModelGateway",
+    "ModelResult",
+    "ModelReviewer",
+    "ModelUnavailable",
     "Observation",
     "Outbox",
     "Pdp",
@@ -105,10 +134,14 @@ __all__ = [
     "RegistryStore",
     "Reject",
     "Review",
+    "ReviewUnavailable",
+    "RunResult",
     "SPEC_VERSION",
     "SeenStore",
+    "ToolResult",
     "Tracer",
     "Verifier",
+    "allowed_localities",
     "allowed_targets",
     "audit_hash",
     "canonicalize",

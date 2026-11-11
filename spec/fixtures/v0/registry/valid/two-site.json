@@ -55,7 +55,7 @@
     "agent:field-station": {
       "public_key": "ed25519:L7qRi8K_zt4aGSvZAz50TLYJuYOtMqhVJt06eByWPXc",
       "version": "0.5.0",
-      "manifest_hash": "sha256:3d5581714ef72003feed7c9e08662076d3618fd83d18f6b6668891d4bb2c3813",
+      "manifest_hash": "sha256:87d2955f6e6dc23e557b9b0d7cae753b9b379ac2c63c3a480978fbadc0234aaa",
       "cells": [
         "field-station"
       ],

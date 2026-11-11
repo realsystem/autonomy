@@ -98,6 +98,10 @@ def _manifest(m: dict, where: str, ctx: Context) -> Iterable[Finding]:
         yield Finding("error", f"{where}.capabilities.provides", f"capability {dup} provided twice")
     if caps.get("proposes_actions") and "action-lifecycle" not in m["contracts"]:
         yield Finding("error", f"{where}.contracts", "proposes_actions requires the action-lifecycle contract")
+    if "agent" in m and m.get("kind") != "agent":
+        yield Finding("error", f"{where}.agent", "only agents (kind agent) have an agent section")
+    if (m.get("agent") or {}).get("quarantined") and (m.get("capabilities") or {}).get("proposes_actions"):
+        yield Finding("error", f"{where}.agent.quarantined", "a quarantined agent cannot propose actions")
     if "health" in m["contracts"] and "health" not in m["runtime"]:
         yield Finding("warning", f"{where}.runtime", "no HTTP health endpoints: the component must publish health.reported events every 60 s")
 

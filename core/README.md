@@ -22,6 +22,8 @@ The one implementation of what every component does at its boundary: canonical J
 | Approvals and owner control (C05) | `ApprovalService`, `ControlState` | — |
 | Action Gateway (C06) | `ActionGateway`, `AdapterResult`, `MockAdapter` | — |
 | Verification (C14) | `Verifier`, `Probe`, `Observation`, `undo_proposal` | — |
+| Model gateway (C12) | `ModelGateway`, `Endpoint`, `ModelUnavailable`, `FakeProvider`, `allowed_localities` | — |
+| Agent host (C11) | `AgentHost`, `AgentContext`, `ToolResult`, `ModelReviewer` | — |
 | Logs, traces, redaction (C17) | `configure_logging`, `Tracer`, `REDACTOR`, `correlation`, `reconstruct` | — |
 | Secrets (C18) | `resolve`, `resolve_config`, `register_provider`, `scan` | — |
 | Ids and time | `new_ulid`, `prefixed_id`, `new_traceparent`, `to_rfc3339`, `parse_rfc3339` | `NewULID`, `NewTraceparent`, `FormatTime`, `ParseTime` |
@@ -80,6 +82,24 @@ record = gateway.execute({"action_id": ..., "proposal": proposal, "decision": de
 ```
 
 Decision rules (R3 never; Cedar `forbid` wins; grant, policy, owner or R0 must permit; untrusted input, evaluator escalation or a level below the risk send it to the owner; `@approvable` policies give `require_approval`) are in the `pdp` module docstring; gateway checks in the `gateway` module docstring. Real Cedar is tested in CI (`policy engine (Cedar)` job).
+
+## Models and agents
+
+```python
+gw = ac.ModelGateway.from_config(yaml.safe_load(open("ops/models.example.yaml")), usage_path="/state/model-usage.jsonl")
+r = gw.complete({"requested_by": "agent:node-assistant@edge-1", "task_class": "ask.node", "privacy": "site",
+                 "messages": [{"role": "user", "content": "Why is the CPU hot?"}], "deadline_s": 60})
+# r.content, r.endpoint, r.usage; or ModelUnavailable(code) -> degrade, never block safety
+
+host = ac.AgentHost(gateway=gw, tools={"node.status": read_status}, submit=submit_proposal,
+                    suspended=lambda agent: control.is_suspended(agent), cell="edge-1", audit=audit)
+host.register(manifest, run)      # manifest.agent: tools, quarantined, budgets
+host.run("agent:node-assistant", {"question": "..."})
+
+evaluator = ac.Evaluator(..., reviewer=ac.ModelReviewer(gw))   # escalate-only; no model = skipped (ST-03)
+```
+
+How privacy maps to localities is in the `models` docstring. `autonomy models check ops/models.example.yaml` prints, for each route and privacy class, which endpoints may be used.
 
 ## Evaluate before, verify after
 

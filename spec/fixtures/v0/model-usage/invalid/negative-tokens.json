@@ -1,0 +1,25 @@
+{
+  "description": "token counts are not negative",
+  "expect": "minimum",
+  "instance": {
+    "request_id": "mdl_01JC9Q40000000000000000001",
+    "requested_by": "agent:field-station@field-station",
+    "task_class": "assess.farm",
+    "privacy": "private",
+    "outcome": "ok",
+    "attempts": [
+      {
+        "endpoint": "home-gpu",
+        "outcome": "ok"
+      }
+    ],
+    "at": "2026-11-06T18:20:11Z",
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R",
+    "endpoint": "home-gpu",
+    "locality": "owned",
+    "model": "qwen2.5:14b",
+    "prompt_tokens": -1,
+    "completion_tokens": 96,
+    "duration_ms": 4120
+  }
+}

@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 
-SPEC_VERSION = "0.5.0"
+SPEC_VERSION = "0.6.0"
 MAJOR = 0
 BASE_URI = f"https://autonomy.local/spec/v{MAJOR}/"
 
@@ -28,6 +28,7 @@ CONTRACTS = {
     "audit": ["audit-record"],
     "job": ["job"],
     "registry": ["registry", "registry-signature"],
+    "model": ["model-request", "model-usage"],
 }
 
 # Conformance level -> contracts the manifest must declare.

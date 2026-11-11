@@ -1,0 +1,32 @@
+{
+  "description": "every call has a deadline",
+  "expect": "'deadline_s' is a required property",
+  "instance": {
+    "request_id": "mdl_01JC9Q40000000000000000001",
+    "requested_by": "agent:field-station@field-station",
+    "task_class": "assess.farm",
+    "privacy": "private",
+    "system": "You assess irrigation needs from sensor data. Answer in JSON.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Soil moisture tree row 1: 18.4 % (06:20). ET0 yesterday: 5.1 mm.",
+        "trust": "trusted"
+      }
+    ],
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "summary"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "max_tokens": 400,
+    "temperature": 0.2,
+    "correlationid": "corr_01JC9Q2F7T3B6W8K0M4N5P6Q7R"
+  }
+}

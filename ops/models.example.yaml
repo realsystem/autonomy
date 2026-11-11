@@ -1,0 +1,33 @@
+# Model routing for the C12 gateway (ADR-017). Check it with:
+#   autonomy models check ops/models.example.yaml
+# Callers name a task class and the privacy of their data; the gateway picks the first
+# endpoint in the route whose locality may see that data, and falls back down the list.
+#
+# locality: cell (this machine), site (this LAN), owned (the owner's machines at other
+# sites, over the owner's tailnet), cloud (third party).
+# private and site data: cell/site/owned only. secret-adjacent or routing local_only:
+# cell/site only. public: anywhere.
+endpoints:
+  home-gpu:                       # processor llm.chat on the home GPU server
+    kind: processor
+    url: http://processor:8080    # the control plane on the edge server
+    locality: owned
+    model: qwen2.5:14b
+    api_key: secret://file/run/edge/processor.key
+    priority: 10                  # interactive classes ahead of batch jobs
+    retention_s: 3600             # sensitive job data erased after an hour
+  claude:
+    kind: anthropic
+    url: https://api.anthropic.com
+    locality: cloud
+    model: claude-sonnet-5-5
+    api_key: secret://env/ANTHROPIC_API_KEY
+
+routes:
+  review: [home-gpu]              # M8 reviewer: private; no model = review skipped (ST-03)
+  ask.node: [home-gpu, claude]    # site data: claude is skipped automatically
+  assess.farm: [home-gpu]
+  "*": [home-gpu]
+
+budgets:
+  agent:node-assistant: {tokens_per_day: 200000, model_calls_per_day: 200}
