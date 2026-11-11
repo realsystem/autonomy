@@ -4,12 +4,15 @@ name: core
 # and on core release tags.
 on:
   pull_request:
-    paths: ["core/**", "spec/**", ".github/workflows/core.yml"]
+    paths: ["core/**", "spec/**", "ops/**", ".github/workflows/core.yml"]
   push:
     branches: [main]
-    paths: ["core/**", "spec/**", ".github/workflows/core.yml"]
+    paths: ["core/**", "spec/**", "ops/**", ".github/workflows/core.yml"]
     tags: ["core-v*", "core/go/v*"]
   workflow_dispatch:
+  # weekly: new releases of cryptography, cedarpy, Python or Go must not break core unnoticed
+  schedule:
+    - cron: "17 16 * * 3"
 
 permissions:
   contents: read
