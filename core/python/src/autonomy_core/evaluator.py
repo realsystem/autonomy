@@ -148,21 +148,21 @@ class Evaluator:
             ev = self._evaluate(proposal, risk_class)
             if sp is not None:
                 sp.set(**{"autonomy.evaluation": ev["outcome"]})
-        if self.audit is not None:
-            pid = ev["proposal_id"]
-            act = proposal.get("action", {}) if isinstance(proposal, Mapping) else {}
-            failed = [c["name"] for c in ev["checks"] if not c["ok"]]
-            self.audit.append(
-                "action.evaluated",
-                summary=(
-                    f"{ev['outcome']}: {act.get('type')} on {act.get('target')}"
-                    + (f" (failed: {', '.join(failed)})" if failed else "")
-                    + (f"; {'; '.join(ev['escalation_reasons'])}" if ev["escalation_reasons"] else "")
-                )[:1000],
-                correlationid=correlationid
-                or (f"corr_{pid[4:]}" if pid.startswith("prp_") else "corr_unknown"),
-                refs={"proposal": pid, "evaluation": ev["evaluation_id"]},
-            )
+            if self.audit is not None:
+                pid = ev["proposal_id"]
+                act = proposal.get("action", {}) if isinstance(proposal, Mapping) else {}
+                failed = [c["name"] for c in ev["checks"] if not c["ok"]]
+                self.audit.append(
+                    "action.evaluated",
+                    summary=(
+                        f"{ev['outcome']}: {act.get('type')} on {act.get('target')}"
+                        + (f" (failed: {', '.join(failed)})" if failed else "")
+                        + (f"; {'; '.join(ev['escalation_reasons'])}" if ev["escalation_reasons"] else "")
+                    )[:1000],
+                    correlationid=correlationid
+                    or (f"corr_{pid[4:]}" if pid.startswith("prp_") else "corr_unknown"),
+                    refs={"proposal": pid, "evaluation": ev["evaluation_id"]},
+                )
         return ev
 
     # -- the checks

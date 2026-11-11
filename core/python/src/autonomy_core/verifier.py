@@ -164,12 +164,12 @@ class Verifier:
             if self.tracer is not None
             else contextlib.nullcontext()
         )
-        with span as sp:
+        with span as sp:  # audit records written here carry the action's trace id (IT-71)
             v = self._check(proposal, record, final)
             if sp is not None:
                 sp.set(**{"autonomy.verification": v["result"] if v else "pending"})
-        if v is not None:
-            self._settle(v, proposal, record, correlationid, refs)
+            if v is not None:
+                self._settle(v, proposal, record, correlationid, refs)
         return v
 
     def check_pending(self, gateway: Any, *, final: bool = False) -> list[dict[str, Any]]:
