@@ -218,6 +218,34 @@ class TestStation:
             st.stopping = True
             t.join(timeout=5)
 
+    def test_status_snapshot_for_readers(self, ha, tmp_path):
+        """The bot's /farm reads status.json, never the event log; it keeps values while HA is away."""
+        st, log, t = self.start(ha, tmp_path)
+        status = tmp_path / "status.json"
+
+        def doc():
+            try:
+                return json.loads(status.read_text())
+            except (OSError, ValueError):
+                return {}
+
+        try:
+            assert self.wait(lambda: doc().get("connected") is True)
+            post(ha, "/_lab/set", {"entity_id": "sensor.ws90_temperature", "state": "35"})
+            assert self.wait(
+                lambda: doc()["entities"].get("sensor.ws90_temperature", {}).get("state") == "35"
+            )
+            d = doc()
+            assert d["entities"]["sensor.ws90_temperature"]["unit"]  # unit of measurement carried over
+            assert "lock.front_door" not in d["entities"]
+            post(ha, "/_lab/restart", {"seconds": 2})
+            assert self.wait(lambda: doc().get("connected") is False)
+            assert "sensor.ws90_temperature" in doc()["entities"]  # last known value stays
+            assert not list(tmp_path.glob("*.tmp"))
+        finally:
+            st.stopping = True
+            t.join(timeout=5)
+
     def test_config_loading(self, tmp_path, monkeypatch):
         (tmp_path / "tok").write_text("from-file\n")
         (tmp_path / "c.json").write_text(

@@ -7,6 +7,7 @@ restarts. It cannot write to Home Assistant: it only owns an ``HaReader``.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -32,11 +33,10 @@ class StationConfig:
     retention_days: float = 30.0
     cell: str = "field-station"
     backoff_max_s: float = 30.0
+    status_file: str = ""  # a small JSON snapshot for readers; default: status.json next to the db
 
     @classmethod
     def load(cls, path: Path | str) -> StationConfig:
-        import json
-
         text = Path(path).read_text(encoding="utf-8")
         try:
             raw = json.loads(text)
@@ -82,6 +82,12 @@ class Station:
         self.observed = 0
         self.heartbeats = 0
         self._last: dict[str, tuple[str, dict[str, Any]]] = {}
+        self._values: dict[str, dict[str, Any]] = {}  # last known value per entity, kept while disconnected
+        self._status_path = (
+            Path(cfg.status_file) if cfg.status_file else Path(cfg.db).with_name("status.json")
+        )
+        self._status_dirty = False
+        self._status_at = 0.0
         self._next_heartbeat = 0.0
         self.stopping = False
 
@@ -100,7 +106,39 @@ class Station:
             ts=o.observed_at,
         )
         self.observed += 1
+        attrs = o.attributes
+        self._values[o.entity_id] = {
+            "state": o.state,
+            "unit": attrs.get("unit_of_measurement", ""),
+            "name": attrs.get("friendly_name", ""),
+            "device_class": attrs.get("device_class", ""),
+            "observed_at": o.observed_at,
+        }
+        self._status_dirty = True
         return True
+
+    def write_status(self) -> None:
+        """Snapshot for readers that must not open the event log (the Telegram bot's /farm).
+
+        Atomic (temp file + rename), so a reader never sees half a file. Best effort: a full
+        disk must not stop the cell from observing."""
+        doc = {
+            "cell": self.cfg.cell,
+            "updated_at": self.clock(),
+            "connected": self.connected,
+            "uptime_s": round(self.clock() - self.started, 1),
+            "rss_kb": rss_kb(),
+            "entities": self._values,
+        }
+        tmp = self._status_path.with_name(self._status_path.name + ".tmp")
+        try:
+            tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, self._status_path)
+        except OSError as e:
+            log.warning("cannot write %s: %s", self._status_path, e)
+        self._status_dirty = False
+        self._status_at = self.clock()
 
     def heartbeat(self) -> None:
         self.heartbeats += 1
@@ -117,6 +155,7 @@ class Station:
             },
         )
         self._next_heartbeat = self.clock() + self.cfg.heartbeat_s
+        self.write_status()
 
     def session(self, reader: HaReader) -> None:
         """One connection: snapshot, then follow changes until the connection ends."""
@@ -134,6 +173,8 @@ class Station:
             wait = max(0.1, min(1.0, self._next_heartbeat - self.clock()))
             for o in reader.events(wait):
                 self.record(o)
+            if self._status_dirty and self.clock() - self._status_at >= 1.0:
+                self.write_status()
 
     def run(self) -> None:
         delay = 1.0
