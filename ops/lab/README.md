@@ -49,3 +49,19 @@ Everything is in one Docker network, `autonomy-lab`; containers are labelled `au
 Runs against the mocked Telegram API: `/status`; `/ask` through the whole model path; the model suggesting a restart and `/restart frigate` with the lab code (the real helper restarts the container); the model failing (`/ask` says so); `/audit`; a simulated `/reboot` (the bot comes back and says so); and a check that no secret (bot token, authenticator secret, job service key) reached the model log. About 5 minutes.
 
 CI runs it on pull requests in this repo. processor is private, so the job needs a repository secret `LAB_REPOS_TOKEN` (read access to `realsystem/processor`); without it the job is skipped.
+
+## Farm profile (`--farm`)
+
+`ops/lab/lab.sh up --mock-telegram --farm` adds a Home Assistant stand-in (`farm/ha-stub`) with simulated
+Ecowitt **GW3000** gateway, **WS90** weather station and **WH51** soil sensors, plus the read-only
+**Field Station cell** (M10) built from this checkout. The stub also holds decoy entities (a lock, an alarm
+panel, a phone location) that are not on the allowlist, and refuses and records any write attempt.
+
+    ops/lab/lab.sh farm events 20                         what the cell recorded
+    ops/lab/lab.sh farm set sensor.ws90_temperature 35    change a sensor value
+    ops/lab/lab.sh farm restart-ha 10                     Home Assistant goes away; the cell reconnects
+    ops/lab/lab.sh farm writes                            every write attempt (must stay empty)
+
+`verify` adds five scenarios when the profile is up: farm-observe, farm-change, farm-ha-restart,
+farm-heartbeat (memory under 300 MB) and farm-no-writes. The same cell runs on a real Home Assistant as the
+add-on in `ops/ha-addon/autonomy-station/`.

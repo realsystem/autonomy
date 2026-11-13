@@ -3,13 +3,14 @@
 # (processor/lab), the edge node with stand-ins for Frigate and the host helpers
 # (edge_server/lab), and a real or mocked Telegram. No real model, no hardware, no cloud.
 #
-#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--only processor|edge_server]
+#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--only processor|edge_server|farm]
 #   ops/lab/lab.sh down | status | logs [service] | reset | check
 #   ops/lab/lab.sh verify                 all scenarios, automatically (needs --mock-telegram)
 #   ops/lab/lab.sh scenarios              what to try by hand
 #   ops/lab/lab.sh code                   the current /restart and /reboot code
 #   ops/lab/lab.sh llm normal|down|slow [s]|garbage|echo|error      the fake model's mode
 #   ops/lab/lab.sh say "/ask ..." | replies [n]                     (mock Telegram)
+#   ops/lab/lab.sh farm events [n] | set <entity> <state> | restart-ha [s]   (with --farm)
 #
 # Run after `git pull` in processor, edge_server and autonomy: it builds from the working
 # copies (uncommitted changes included). Needs only bash, git, docker and docker compose
@@ -29,6 +30,9 @@ PROC="$LAB_REPOS/processor"
 EDGE="$LAB_REPOS/edge_server"
 SECRETS="$LAB_DIR/secrets.env"
 MODE_FILE="$LAB_DIR/orchestrator.mode"
+FARM_FILE="$LAB_DIR/orchestrator.farm"
+FARM="$HERE/farm"
+export LAB_FARM_STATE="$LAB_DIR/farm"
 
 die() { echo "lab: $*" >&2; exit 1; }
 say() { echo "lab: $*"; }
@@ -39,6 +43,7 @@ preflight() {
   docker info >/dev/null 2>&1 || die "docker is not running (start Docker Desktop)"
   local name dir
   for name in processor edge_server autonomy; do
+    if [ "${LAB_ONLY:-}" = farm ] && [ "$name" != autonomy ]; then continue; fi
     case "$name" in processor) dir="$PROC" ;; edge_server) dir="$EDGE" ;; *) dir="$AUTONOMY" ;; esac
     [ -d "$dir/.git" ] || die "no $name checkout at $dir (LAB_REPOS=$LAB_REPOS)"
     [ "$name" = autonomy ] || [ -x "$dir/lab/lab.sh" ] || die "$name has no lab/lab.sh: git pull in $dir (the lab needs its latest main)"
@@ -49,6 +54,42 @@ preflight() {
 }
 
 mock_on() { [ "$(cat "$MODE_FILE" 2>/dev/null)" = "mock" ]; }
+farm_on() { [ -f "$FARM_FILE" ]; }
+
+farmc() { LAB_STATE="$LAB_FARM_STATE" docker compose -f "$FARM/compose.yml" "$@"; }
+
+ha_admin() { # METHOD PATH [json]: the Home Assistant stand-in's admin API
+  docker exec "${LAB_PROJECT}-ha" python -c '
+import sys, urllib.request
+m, p, b = sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None
+r = urllib.request.Request("http://127.0.0.1:8123" + p, b.encode() if b else None, {"Content-Type": "application/json"}, method=m)
+print(urllib.request.urlopen(r, timeout=30).read().decode())' "$@"
+}
+
+station_events() { # n [kind]
+  docker exec "${LAB_PROJECT}-station" autonomy station events --db /data/station-events.db -n "$1" ${2:+--kind "$2"}
+}
+
+farm_up() {
+  docker network inspect "$LAB_NETWORK" >/dev/null 2>&1 || docker network create "$LAB_NETWORK" >/dev/null
+  mkdir -p "$LAB_FARM_STATE/config"
+  cp "$FARM/station.json" "$LAB_FARM_STATE/config/station.json"
+  farmc up -d --build --wait
+  touch "$FARM_FILE"
+}
+
+farm_check() {
+  local out
+  for _ in $(seq 1 20); do
+    out="$(station_events 200 2>/dev/null || true)"
+    if grep -q "observation.state" <<< "$out" && grep -q "cell.heartbeat" <<< "$out"; then
+      say "farm check ok: the Field Station cell is observing Home Assistant (read only)"
+      return 0
+    fi
+    sleep 2
+  done
+  die "the Field Station cell recorded nothing: $(farmc logs --no-color --tail 20 station 2>&1 | tail -20)"
+}
 
 tg() { # METHOD PATH [json]: the mocked Telegram API
   docker exec telegram-mock python -c '
@@ -59,22 +100,26 @@ print(urllib.request.urlopen(r, timeout=30).read().decode())' "$@"
 }
 
 cmd_up() {
-  local only="" edge_args=() proc_args=() a
+  local only="" edge_args=() proc_args=() a farm=0
   while [ $# -gt 0 ]; do
     a="$1"; shift
     case "$a" in
       --mock-telegram) edge_args+=("$a") ;;
       --pinned) edge_args+=("$a") ;;
       --only) only="${1:-}"; shift || true ;;
-      --farm) die "the farm profile is not built yet (design/lab.md section 9)" ;;
+      --farm) farm=1 ;;
       *) die "unknown option $a" ;;
     esac
   done
-  case "$only" in ""|processor|edge_server) ;; *) die "--only is processor or edge_server" ;; esac
+  case "$only" in ""|processor|edge_server|farm) ;; *) die "--only is processor, edge_server or farm" ;; esac
+  [ "$only" = farm ] && farm=1
   say "what will be built:"
-  preflight
+  LAB_ONLY="$only" preflight
   mkdir -p "$LAB_DIR"
-  case " ${edge_args[*]:-} " in *" --mock-telegram "*) echo mock > "$MODE_FILE" ;; *) echo real > "$MODE_FILE" ;; esac
+  if [ "$only" != farm ]; then
+    case " ${edge_args[*]:-} " in *" --mock-telegram "*) echo mock > "$MODE_FILE" ;; *) echo real > "$MODE_FILE" ;; esac
+  fi
+  [ "$farm" = 1 ] || rm -f "$FARM_FILE"
 
   if [ -z "$only" ] || [ "$only" = processor ]; then
     "$PROC/lab/lab.sh" up ${proc_args[@]+"${proc_args[@]}"}
@@ -82,8 +127,11 @@ cmd_up() {
   if [ -z "$only" ] || [ "$only" = edge_server ]; then
     "$EDGE/lab/lab.sh" up ${edge_args[@]+"${edge_args[@]}"}
   fi
+  if [ "$farm" = 1 ]; then farm_up; farm_check; fi
   [ -n "$only" ] || cmd_check
-  if mock_on; then
+  if [ "$only" = farm ]; then
+    say "farm up. Next: ops/lab/lab.sh farm events 20   or   ops/lab/lab.sh verify farm"
+  elif mock_on; then
     say "up (mock Telegram). Next: ops/lab/lab.sh verify, or  ops/lab/lab.sh say \"/ask how is the node?\"  then  replies"
   else
     say "up. In Telegram, message your lab bot (it answers only user id $(secret LAB_TELEGRAM_ID)):"
@@ -102,16 +150,20 @@ cmd_check() {
   if docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' telegram-bot | grep -qiE '^(ANTHROPIC|OPENAI)_API_KEY='; then
     die "the bot has a cloud model key in its environment: not a lab"
   fi
+  if farm_on; then farm_check; fi
   say "check ok"
 }
 
 cmd_down() {
+  if farm_on; then farmc down --remove-orphans || true; rm -f "$FARM_FILE"; fi
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" down || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" down || true
   rm -f "$MODE_FILE"
 }
 
 cmd_reset() {
+  if [ -f "$FARM/compose.yml" ]; then LAB_STATE="$LAB_FARM_STATE" farmc down -v --remove-orphans >/dev/null 2>&1 || true; fi
+  rm -rf "$LAB_FARM_STATE" "$FARM_FILE"
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" reset || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" reset || true
   docker network rm "$LAB_NETWORK" >/dev/null 2>&1 || true
@@ -119,10 +171,11 @@ cmd_reset() {
   say "reset: containers, volumes and lab state removed. Kept: $SECRETS (your lab token and TOTP secret)"
 }
 
-cmd_status() { "$PROC/lab/lab.sh" status || true; "$EDGE/lab/lab.sh" status || true; }
+cmd_status() { "$PROC/lab/lab.sh" status || true; "$EDGE/lab/lab.sh" status || true; if farm_on; then farmc ps || true; fi; }
 cmd_logs() { # service: the right part's logs
   case "${1:-}" in
     mock-llm|control-plane|worker) "$PROC/lab/lab.sh" logs "$@" ;;
+    ha|station) farmc logs --no-color --tail 100 "$@" ;;
     "") "$PROC/lab/lab.sh" logs | tail -40; "$EDGE/lab/lab.sh" logs | tail -80 ;;
     *) "$EDGE/lab/lab.sh" logs "$@" ;;
   esac
@@ -142,6 +195,10 @@ Things to try by hand (with your lab bot in Telegram; or `ops/lab/lab.sh say "..
   echo          ops/lab/lab.sh llm echo        then /ask ...: the answer shows exactly what the model was sent
   reboot        /reboot <code>                 simulated: the bot and Frigate restart, "Back online after reboot"
   audit         /audit                         the signed action log
+  farm          ops/lab/lab.sh up --farm       adds Home Assistant (stand-in, simulated GW3000/WS90/WH51) and the read-only Field Station cell
+                ops/lab/lab.sh farm events 20  what the cell recorded (observations, heartbeats)
+                ops/lab/lab.sh farm set sensor.ws90_temperature 35   a change shows up as an event
+                ops/lab/lab.sh farm restart-ha 10   Home Assistant goes away; the cell reconnects
   what left     tail -f ~/.autonomy-lab/processor/mock-llm/mock-llm.jsonl     every model request, in full
 TXT
 }
@@ -150,6 +207,18 @@ cmd_llm() { "$PROC/lab/lab.sh" llm "$@"; }
 cmd_code() { "$EDGE/lab/lab.sh" code; }
 cmd_say() { "$EDGE/lab/lab.sh" say "$@"; }
 cmd_replies() { "$EDGE/lab/lab.sh" replies "$@"; }
+cmd_farm() {
+  farm_on || die "the farm profile is not up: ops/lab/lab.sh up --farm"
+  case "${1:-}" in
+    events) station_events "${2:-20}" ${3:+"$3"} ;;
+    set) [ $# -ge 3 ] || die "usage: lab.sh farm set <entity> <state>"
+         ha_admin POST /_lab/set "{\"entity_id\":\"$2\",\"state\":\"$3\"}" ;;
+    restart-ha) ha_admin POST /_lab/restart "{\"seconds\":${2:-10}}" ;;
+    writes) ha_admin GET /_lab/writes ;;
+    *) die "usage: lab.sh farm events [n] [kind] | set <entity> <state> | restart-ha [seconds] | writes" ;;
+  esac
+}
+
 cmd_cam() { "$EDGE/lab/lab.sh" cam "$@"; }
 
 # ---- verify: the scenarios, automatically (mocked Telegram) -------------------------------
@@ -183,7 +252,69 @@ wait_reply() { # pattern (lower case, | for alternatives) timeout_s
 step() { printf 'verify: %-12s' "$1"; }
 ok() { echo "ok"; }
 
+wait_events() { # kind pattern timeout_s: until an event of that kind matches the pattern
+  local kind="$1" pat="$2" t="${3:-40}" out
+  for _ in $(seq 1 $((t / 2))); do
+    out="$(station_events 400 "$kind" 2>/dev/null || true)"
+    if grep -qE "$pat" <<< "$out"; then return 0; fi
+    sleep 2
+  done
+  echo "--- no $kind event matching '$pat' in $t s. Last events:" >&2
+  station_events 8 >&2 || true
+  return 1
+}
+
+count_events() { station_events 5000 "$1" | wc -l | tr -d ' '; }
+
+verify_farm() {
+  local before out rss
+  step farm-observe
+  out="$(station_events 5000 observation.state)"
+  grep -q "sensor.ws90_temperature" <<< "$out" || die "no observation of the weather station"
+  grep -q "sensor.wh51_ch1_soil_moisture" <<< "$out" || die "no observation of the soil sensor"
+  if grep -qE "lock.front_door|alarm_control_panel|owner_phone|secret_api_notes" <<< "$out"; then
+    die "the cell recorded an entity that is not on its allowlist"
+  fi
+  ok
+
+  step farm-change
+  ha_admin POST /_lab/set '{"entity_id":"sensor.ws90_temperature","state":"33.3"}' >/dev/null
+  ha_admin POST /_lab/set '{"entity_id":"lock.front_door","state":"unlocked"}' >/dev/null
+  wait_events observation.state 'sensor.ws90_temperature.*"state": "33.3"' 40
+  sleep 3
+  ! grep -q "lock.front_door" <<< "$(station_events 5000 observation.state)" || die "a change of a non-allowlisted entity was recorded"
+  ok
+
+  step farm-ha-restart
+  before="$(count_events station.connected)"
+  ha_admin POST /_lab/restart '{"seconds":6}' >/dev/null
+  wait_events station.disconnected 'station.disconnected' 40
+  for _ in $(seq 1 40); do
+    [ "$(count_events station.connected)" -gt "$before" ] && break
+    sleep 2
+  done
+  [ "$(count_events station.connected)" -gt "$before" ] || die "the cell did not reconnect after Home Assistant came back"
+  ha_admin POST /_lab/set '{"entity_id":"sensor.wh51_ch2_soil_moisture","state":"57"}' >/dev/null
+  wait_events observation.state 'sensor.wh51_ch2_soil_moisture.*"state": "57"' 40
+  ok
+
+  step farm-heartbeat
+  out="$(station_events 1 cell.heartbeat)"
+  grep -q '"connected": true' <<< "$out" || die "the latest heartbeat does not say connected: $out"
+  rss="$(sed -n 's/.*"rss_kb": \([0-9]*\).*/\1/p' <<< "$out")"
+  [ -n "$rss" ] && [ "$rss" -lt 300000 ] || die "heartbeat memory out of range (${rss:-none} kB; the target is under 300 MB)"
+  ok
+
+  step farm-no-writes
+  grep -q '"writes": \[\]' <<< "$(ha_admin GET /_lab/writes)" || die "something wrote to Home Assistant: $(ha_admin GET /_lab/writes)"
+  ok
+}
+
 cmd_verify() {
+  if [ "${1:-}" = farm ]; then # only the farm scenarios (needs just `up --only farm`)
+    farm_on || die "the farm profile is not up: ops/lab/lab.sh up --only farm"
+    verify_farm; say "farm scenarios passed"; return 0
+  fi
   mock_on || die "verify needs the mocked Telegram API: ops/lab/lab.sh up --mock-telegram"
   local log="$LAB_DIR/processor/mock-llm/mock-llm.jsonl" code
   { : > "$log"; } 2>/dev/null || true
@@ -209,6 +340,8 @@ cmd_verify() {
   step reboot;   tg POST /_lab/clear '{}' >/dev/null; code="$(fresh_code)"; cmd_say "/reboot $code"
   wait_reply 'back online after reboot' 180; ok
 
+  if farm_on; then verify_farm; fi
+
   step no-leaks
   local tok totp key
   tok="$(secret LAB_BOT_TOKEN)"; totp="$(secret LAB_TOTP_SECRET)"; key="$(cat "$LAB_DIR/processor/secrets/bot-api-key" 2>/dev/null || true)"
@@ -228,12 +361,13 @@ case "${1:-}" in
   status) cmd_status ;;
   logs) shift; cmd_logs "$@" ;;
   check) preflight; cmd_check ;;
-  verify) cmd_verify ;;
+  verify) shift; cmd_verify "$@" ;;
   scenarios) cmd_scenarios ;;
   llm) shift; cmd_llm "$@" ;;
   code) cmd_code ;;
   say) shift; cmd_say "$@" ;;
   replies) shift; cmd_replies "$@" ;;
   cam) shift; cmd_cam "$@" ;;
-  *) sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+  farm) shift; cmd_farm "$@" ;;
+  *) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

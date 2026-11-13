@@ -1,0 +1,38 @@
+# The lab's farm profile: Home Assistant stand-in with simulated Ecowitt GW3000 + WS90 + WH51
+# sensors, and the read-only Field Station cell (M10) built from this checkout.
+name: ${LAB_PROJECT:-alab}-farm
+
+networks:
+  lab:
+    name: ${LAB_NETWORK:-autonomy-lab}
+    external: true
+
+services:
+  ha:
+    build: {context: ./ha-stub}
+    image: alab-ha-stub:lab
+    container_name: ${LAB_PROJECT:-alab}-ha
+    labels: {autonomy.lab: "true"}
+    environment:
+      - HA_TOKEN=lab-ha-token
+      - SIM_TICK=5
+    networks: [lab]
+    restart: unless-stopped
+
+  station:
+    build: {context: "${LAB_AUTONOMY_DIR:?}", dockerfile: ops/lab/farm/station.Dockerfile}
+    image: alab-station:lab
+    container_name: ${LAB_PROJECT:-alab}-station
+    labels: {autonomy.lab: "true"}
+    environment:
+      - HA_TOKEN=lab-ha-token
+    volumes:
+      - ${LAB_STATE:?}/config:/config:ro
+      - station-data:/data
+    networks: [lab]
+    depends_on:
+      ha: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  station-data: {}

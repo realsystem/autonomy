@@ -18,6 +18,8 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import logging
+import signal
 import sys
 import time
 from pathlib import Path
@@ -532,6 +534,40 @@ def cmd_trace(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_station_run(args: argparse.Namespace) -> int:
+    """M10: the read-only Field Station cell loop."""
+    from .eventlog import EventLog
+    from .station import Station, StationConfig
+
+    cfg = StationConfig.load(args.config)
+    if not cfg.allow:
+        print("station: the allowlist is empty, so there is nothing it may read", file=sys.stderr)
+        return 2
+    if not cfg.token:
+        print("station: no Home Assistant token (SUPERVISOR_TOKEN, HA_TOKEN or token_file)", file=sys.stderr)
+        return 2
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    station = Station(cfg, EventLog(cfg.db))
+    signal.signal(signal.SIGTERM, lambda *_: setattr(station, "stopping", True))
+    signal.signal(signal.SIGINT, lambda *_: setattr(station, "stopping", True))
+    station.run()
+    return 0
+
+
+def cmd_station_events(args: argparse.Namespace) -> int:
+    from .eventlog import EventLog
+
+    log = EventLog(args.db)
+    rows = log.tail(args.n, kind=args.kind, subject=args.subject)
+    if args.json:
+        print(json.dumps(rows, indent=2))
+        return 0
+    for e in rows:
+        when = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(e["ts"]))
+        print(f"{when} {e['kind']:<18} {e['subject']:<44} {json.dumps(e['data'], sort_keys=True)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="autonomy", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -575,6 +611,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--who")
     p.add_argument("--day", help="YYYY-MM-DD (default today, UTC)")
     p.set_defaults(func=cmd_models_usage)
+    stn = sub.add_parser(
+        "station", help="M10 Field Station: read-only Home Assistant observer (C10 + C20 read + C09)"
+    ).add_subparsers(dest="sub", required=True)
+    p = stn.add_parser("run", help="observe Home Assistant, record events, send heartbeats")
+    p.add_argument("--config", required=True, help="JSON or YAML: ha_url, allow, token_file, db, heartbeat_s")
+    p.set_defaults(func=cmd_station_run)
+    p = stn.add_parser("events", help="show the cell's event log")
+    p.add_argument("--db", required=True)
+    p.add_argument("-n", type=int, default=20)
+    p.add_argument("--kind", help="observation.state, cell.heartbeat, station.connected, ...")
+    p.add_argument("--subject")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_station_events)
     p = sub.add_parser("evaluate", help="C13: evaluate a proposal file; exit 0 ok, 1 escalate, 2 reject")
     p.add_argument("proposal")
     p.add_argument("--risk", required=True, choices=["R0", "R1", "R2", "R3"])

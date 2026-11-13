@@ -1,0 +1,29 @@
+# Home Assistant add-on: the Autonomy Field Station cell, step 1 (M10): READ ONLY.
+# It reads allowlisted entities through Home Assistant's WebSocket API, records them in a local
+# event log and sends heartbeats. It never calls a service. Install it as an add-on only: it does
+# not edit configuration.yaml, packages or automations.
+name: Autonomy Field Station
+version: "0.1.0"
+slug: autonomy_station
+description: Read-only observer for the Autonomy platform (entity allowlist, local event log, heartbeats)
+url: https://github.com/realsystem/autonomy
+arch: [aarch64, amd64]
+startup: application
+boot: auto
+init: false
+# SUPERVISOR_TOKEN for the Home Assistant Core API proxy. No hassio_api: it cannot manage
+# the supervisor, other add-ons or HA itself. (The token is not entity-scoped; the allowlist and
+# the adapter's send-only-read rule are what keep this add-on from writing.)
+homeassistant_api: true
+options:
+  allow:
+    - "sensor.ws90_*"
+    - "sensor.wh51_*"
+    - "sensor.gw3000_*"
+  heartbeat_s: 30
+  retention_days: 30
+schema:
+  allow:
+    - str
+  heartbeat_s: int(5,3600)
+  retention_days: int(1,365)
