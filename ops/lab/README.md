@@ -67,3 +67,16 @@ panel, a phone location) that are not on the allowlist, and refuses and records 
 farm-heartbeat (memory under 300 MB), farm-no-writes and farm-bot (`/farm` in Telegram shows the readings
 and nothing off the allowlist; needs `up --farm`, not `--only farm`). The same cell runs on a real Home Assistant as the
 add-on in `ops/ha-addon/autonomy-station/`.
+
+## The owner's authority (A1 grant)
+
+`up` also makes a lab authority (`ops/lab/authority/`): lab-only owner keys, a signed registry and a signed
+policy bundle, in `~/.autonomy-lab/autonomy/`. The bundle grants `agent:node-assistant` level **A1** on
+`host.restart_service` for `frigate`. So when `/ask` concludes that a restart helps, the proposal is permitted
+by policy and then **waits for you**: `/pending` lists it, `/approve <id> <code>` runs it through the Action
+Gateway (real restart in the lab), and `/audit` shows the whole story. The `ask-grant` scenario in `verify`
+does exactly that.
+
+`up --baseline` skips the authority: the node runs the baseline policy, `/ask` only suggests a restart, and you
+run `/restart frigate <code>` yourself (the `ask-restart` scenario). Keys never leave the lab directory;
+`reset` removes them.
