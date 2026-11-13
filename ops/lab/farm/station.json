@@ -1,0 +1,15 @@
+{
+  "ha_url": "ws://alab-ha:8123/api/websocket",
+  "allow": [
+    "sensor.ws90_*",
+    "sensor.wh51_*",
+    "sensor.gw3000_*",
+    "sensor.smartshunt_*",
+    "sensor.eco_worthy_*",
+    "input_number.farm_irrigation_*"
+  ],
+  "db": "/data/station-events.db",
+  "heartbeat_s": 10,
+  "retention_days": 30,
+  "cell": "field-station"
+}
