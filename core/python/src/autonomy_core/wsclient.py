@@ -16,8 +16,13 @@ import struct
 import time
 from urllib.parse import urlsplit
 
-_GUID = b"258EAF5A-9A8E-11C5-A9DC-65B49B1A9ADC"
+_GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"  # fixed by RFC 6455 section 1.3
 MAX_MESSAGE = 16 * 1024 * 1024
+
+
+def _accept(key: str) -> str:
+    """The Sec-WebSocket-Accept value a server must answer for ``key`` (RFC 6455 section 4.2.2)."""
+    return base64.b64encode(hashlib.sha1(key.encode() + _GUID).digest()).decode()
 
 
 class WsError(Exception):
@@ -60,10 +65,14 @@ class WebSocket:
         if " 101 " not in status:
             self.close()
             raise WsError(f"upgrade refused: {status}")
-        accept = base64.b64encode(hashlib.sha1(key.encode() + _GUID).digest()).decode()
-        if f"sec-websocket-accept: {accept}".lower() not in head.decode("latin-1").lower():
+        got = {}
+        for line in head.decode("latin-1").split("\r\n")[1:]:
+            name, _, value = line.partition(":")
+            got[name.strip().lower()] = value.strip()
+        if got.get("sec-websocket-accept") != _accept(key):
             self.close()
-            raise WsError("bad Sec-WebSocket-Accept")
+            answered = got.get("sec-websocket-accept")
+            raise WsError(f"bad Sec-WebSocket-Accept: the server answered {answered!r}")
 
     # -- reading --------------------------------------------------------------------------
 
