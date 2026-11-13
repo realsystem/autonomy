@@ -7,6 +7,7 @@ the WebSocket API. Writes the long-lived token to OUT. Standard library plus aut
 """
 
 import json
+import secrets
 import sys
 import time
 import urllib.error
@@ -22,11 +23,17 @@ def call(url, data=None, form=False, token=None):
     body = None
     headers = {}
     if data is not None:
-        body = urllib.parse.urlencode(data).encode() if form else json.dumps(data).encode()
-        headers["Content-Type"] = "application/x-www-form-urlencoded" if form else "application/json"
+        body = (
+            urllib.parse.urlencode(data).encode() if form else json.dumps(data).encode()
+        )
+        headers["Content-Type"] = (
+            "application/x-www-form-urlencoded" if form else "application/json"
+        )
     if token:
         headers["Authorization"] = "Bearer " + token
-    with urllib.request.urlopen(urllib.request.Request(url, body, headers), timeout=30) as r:
+    with urllib.request.urlopen(
+        urllib.request.Request(url, body, headers), timeout=30
+    ) as r:
         return json.loads(r.read().decode() or "{}")
 
 
@@ -40,20 +47,39 @@ def main(base, out):
     else:
         sys.exit("setup: Home Assistant did not answer /api/onboarding")
     if all(s.get("done") for s in steps):
-        sys.exit("setup: Home Assistant is already onboarded but the lab has no token: ops/lab/lab.sh reset")
+        sys.exit(
+            "setup: Home Assistant is already onboarded but the lab has no token: ops/lab/lab.sh reset"
+        )
     code = call(
         base + "/api/onboarding/users",
-        {"client_id": CLIENT, "name": "Lab", "username": "lab", "password": "lab-password-1", "language": "en"},
+        {
+            "client_id": CLIENT,
+            "name": "Lab",
+            "username": "lab",
+            "password": secrets.token_urlsafe(24),
+            "language": "en",
+        },
     )["auth_code"]
     access = call(
-        base + "/auth/token", {"grant_type": "authorization_code", "code": code, "client_id": CLIENT}, form=True
+        base + "/auth/token",
+        {"grant_type": "authorization_code", "code": code, "client_id": CLIENT},
+        form=True,
     )["access_token"]
     ws = WebSocket(base.replace("http", "ws", 1) + "/api/websocket")
     json.loads(ws.recv_text(10))  # auth_required
     ws.send_text(json.dumps({"type": "auth", "access_token": access}))
     if json.loads(ws.recv_text(10)).get("type") != "auth_ok":
         sys.exit("setup: Home Assistant refused the new token")
-    ws.send_text(json.dumps({"id": 1, "type": "auth/long_lived_access_token", "client_name": "autonomy-lab", "lifespan": 365}))
+    ws.send_text(
+        json.dumps(
+            {
+                "id": 1,
+                "type": "auth/long_lived_access_token",
+                "client_name": "autonomy-lab",
+                "lifespan": 365,
+            }
+        )
+    )
     reply = json.loads(ws.recv_text(10))
     ws.close()
     if not reply.get("success"):
