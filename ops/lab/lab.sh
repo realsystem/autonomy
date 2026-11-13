@@ -3,7 +3,7 @@
 # (processor/lab), the edge node with stand-ins for Frigate and the host helpers
 # (edge_server/lab), and a real or mocked Telegram. No real model, no hardware, no cloud.
 #
-#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--baseline] [--only processor|edge_server|farm]
+#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--farm-config] [--baseline] [--only processor|edge_server|farm]
 #   ops/lab/lab.sh down | status | logs [service] | reset | check
 #   ops/lab/lab.sh verify                 all scenarios, automatically (needs --mock-telegram)
 #   ops/lab/lab.sh scenarios              what to try by hand
@@ -31,6 +31,8 @@ EDGE="$LAB_REPOS/edge_server"
 SECRETS="$LAB_DIR/secrets.env"
 MODE_FILE="$LAB_DIR/orchestrator.mode"
 FARM_FILE="$LAB_DIR/orchestrator.farm"
+FARM_REAL_FILE="$LAB_DIR/orchestrator.farm-config" # present when Home Assistant is real and loads farm_automation
+FA="$LAB_REPOS/farm_automation"                     # the fourth, optional repository
 FARM="$HERE/farm"
 export LAB_FARM_STATE="$LAB_DIR/farm"
 
@@ -41,12 +43,13 @@ secret() { { sed -n "s/^$1=//p" "$SECRETS" 2>/dev/null || true; } | tail -n 1; }
 preflight() {
   command -v docker >/dev/null || die "docker is not installed"
   docker info >/dev/null 2>&1 || die "docker is not running (start Docker Desktop)"
-  local name dir
-  for name in processor edge_server autonomy; do
-    if [ "${LAB_ONLY:-}" = farm ] && [ "$name" != autonomy ]; then continue; fi
-    case "$name" in processor) dir="$PROC" ;; edge_server) dir="$EDGE" ;; *) dir="$AUTONOMY" ;; esac
+  local name dir names="processor edge_server autonomy"
+  [ "${LAB_FARM_CONFIG:-}" = 1 ] && names="$names farm_automation"
+  for name in $names; do
+    if [ "${LAB_ONLY:-}" = farm ] && [ "$name" != autonomy ] && [ "$name" != farm_automation ]; then continue; fi
+    case "$name" in processor) dir="$PROC" ;; edge_server) dir="$EDGE" ;; farm_automation) dir="$FA" ;; *) dir="$AUTONOMY" ;; esac
     [ -d "$dir/.git" ] || die "no $name checkout at $dir (LAB_REPOS=$LAB_REPOS)"
-    [ "$name" = autonomy ] || [ -x "$dir/lab/lab.sh" ] || die "$name has no lab/lab.sh: git pull in $dir (the lab needs its latest main)"
+    case "$name" in processor|edge_server) [ -x "$dir/lab/lab.sh" ] ;; *) true ;; esac || die "$name has no lab/lab.sh: git pull in $dir (the lab needs its latest main)"
     printf '  %-12s %-22s %s%s\n' "$name" "$(git -C "$dir" rev-parse --abbrev-ref HEAD)" \
       "$(git -C "$dir" rev-parse --short HEAD)" \
       "$([ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ] && echo ' (uncommitted changes included)')"
@@ -63,8 +66,19 @@ authority() { # owner keys, a signed registry and policy bundle with an A1 grant
 }
 
 farm_on() { [ -f "$FARM_FILE" ]; }
+farm_real() { [ -f "$FARM_REAL_FILE" ]; }
 
-farmc() { LAB_STATE="$LAB_FARM_STATE" docker compose -f "$FARM/compose.yml" "$@"; }
+farmc() { LAB_STATE="$LAB_FARM_STATE" LAB_HA_TOKEN="$(cat "$LAB_FARM_STATE/ha-token" 2>/dev/null || echo lab-ha-token)" \
+  docker compose -f "$FARM/compose.yml" --profile stub --profile real "$@"; }
+
+# Home Assistant itself, real: write a state with the long-lived token (what a sensor integration would do)
+ha_real_set() { # entity state
+  docker exec "${LAB_PROJECT}-station" python -c '
+import json, os, sys, urllib.request
+r = urllib.request.Request("http://alab-ha:8123/api/states/" + sys.argv[1], json.dumps({"state": sys.argv[2], "attributes": {"unit_of_measurement": "%", "friendly_name": sys.argv[1]}}).encode(),
+    {"Authorization": "Bearer " + os.environ["HA_TOKEN"], "Content-Type": "application/json"})
+print(urllib.request.urlopen(r, timeout=30).status)' "$1" "$2" >/dev/null
+}
 
 ha_admin() { # METHOD PATH [json]: the Home Assistant stand-in's admin API
   docker exec "${LAB_PROJECT}-ha" python -c '
@@ -82,9 +96,41 @@ farm_up() {
   docker network inspect "$LAB_NETWORK" >/dev/null 2>&1 || docker network create "$LAB_NETWORK" >/dev/null
   mkdir -p "$LAB_FARM_STATE/config" "$LAB_FARM_STATE/status"
   chmod 777 "$LAB_FARM_STATE/status" # the cell (uid 1000) writes status.json here; the bot reads it
-  cp "$FARM/station.json" "$LAB_FARM_STATE/config/station.json"
-  farmc up -d --build --wait
+  if farm_real; then
+    farm_up_real
+  else
+    cp "$FARM/station.json" "$LAB_FARM_STATE/config/station.json"
+    farmc up -d --build --wait ha
+    farmc up -d --build station
+  fi
   touch "$FARM_FILE"
+}
+
+# Real Home Assistant with the farm_automation packages; the station's allowlist comes from that repository
+farm_up_real() {
+  local raw
+  [ -f "$FA/tools/farm.py" ] || die "--farm-config needs the farm_automation checkout at $FA"
+  farmc build station
+  rm -rf "$LAB_FARM_STATE/ha-config"; mkdir -p "$LAB_FARM_STATE/ha-config"
+  cp -r "$FA/homeassistant/." "$LAB_FARM_STATE/ha-config/"
+  printf '\n# added by the lab: the API Home Assistant normally gets from its defaults\ndefault_config:\n' >> "$LAB_FARM_STATE/ha-config/configuration.yaml"
+  docker run --rm -v "$FA:/farm:ro" alab-station:lab python /farm/tools/farm.py check >/dev/null \
+    || die "farm_automation's own check fails: run python3 tools/farm.py check there"
+  docker run --rm -i -v "$FA:/farm:ro" alab-station:lab python - <<'PY' > "$LAB_FARM_STATE/config/station.json"
+import json, subprocess, sys
+allow = json.loads(subprocess.check_output([sys.executable, "/farm/tools/farm.py", "allowlist"]))
+print(json.dumps({"ha_url": "ws://alab-ha:8123/api/websocket", "allow": allow, "db": "/data/station-events.db",
+                  "heartbeat_s": 10, "retention_days": 30, "cell": "field-station", "status_file": "/status/status.json"}))
+PY
+  farmc up -d --wait ha-real
+  say "Home Assistant is up with the farm_automation packages; making a token for the lab"
+  docker run --rm --network "$LAB_NETWORK" -v "$HERE/farm/real-ha:/s:ro" -v "$LAB_FARM_STATE:/out" alab-station:lab \
+    python /s/setup.py http://alab-ha:8123 /out/ha-token
+  farmc up -d station
+  # a live gateway pushes its readings: seed the raw soil entities so the farm_* sensors have something to say
+  for raw in $(docker run --rm -v "$FA:/farm:ro" alab-station:lab python /farm/tools/farm.py allowlist | tr -d '[]"' | tr ',' ' '); do
+    case "$raw" in *\**) ;; *) ha_real_set "$raw" 35 ;; esac
+  done
 }
 
 farm_check() {
@@ -109,7 +155,7 @@ print(urllib.request.urlopen(r, timeout=30).read().decode())' "$@"
 }
 
 cmd_up() {
-  local only="" edge_args=() proc_args=() a farm=0 baseline=0
+  local only="" edge_args=() proc_args=() a farm=0 baseline=0 farm_config=0
   while [ $# -gt 0 ]; do
     a="$1"; shift
     case "$a" in
@@ -117,6 +163,7 @@ cmd_up() {
       --pinned) edge_args+=("$a") ;;
       --only) only="${1:-}"; shift || true ;;
       --farm) farm=1 ;;
+      --farm-config) farm=1; farm_config=1 ;; # real Home Assistant loading the farm_automation repository
       --baseline) baseline=1 ;; # no owner authority: the baseline policy, so /ask can only suggest
       *) die "unknown option $a" ;;
     esac
@@ -124,12 +171,13 @@ cmd_up() {
   case "$only" in ""|processor|edge_server|farm) ;; *) die "--only is processor, edge_server or farm" ;; esac
   [ "$only" = farm ] && farm=1
   say "what will be built:"
-  LAB_ONLY="$only" preflight
+  LAB_ONLY="$only" LAB_FARM_CONFIG="$farm_config" preflight
   mkdir -p "$LAB_DIR"
   if [ "$only" != farm ]; then
     case " ${edge_args[*]:-} " in *" --mock-telegram "*) echo mock > "$MODE_FILE" ;; *) echo real > "$MODE_FILE" ;; esac
   fi
   [ "$farm" = 1 ] || rm -f "$FARM_FILE"
+  if [ "$farm_config" = 1 ]; then touch "$FARM_REAL_FILE"; else rm -f "$FARM_REAL_FILE"; fi
 
   if [ "$farm" = 1 ]; then # the bot's /farm reads the cell's status file from this directory
     mkdir -p "$LAB_FARM_STATE/status"; chmod 777 "$LAB_FARM_STATE/status"
@@ -172,7 +220,7 @@ cmd_check() {
 }
 
 cmd_down() {
-  if farm_on; then farmc down --remove-orphans || true; rm -f "$FARM_FILE"; fi
+  if farm_on; then farmc down --remove-orphans || true; rm -f "$FARM_FILE" "$FARM_REAL_FILE"; fi
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" down || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" down || true
   rm -f "$MODE_FILE"
@@ -180,7 +228,7 @@ cmd_down() {
 
 cmd_reset() {
   if [ -f "$FARM/compose.yml" ]; then LAB_STATE="$LAB_FARM_STATE" farmc down -v --remove-orphans >/dev/null 2>&1 || true; fi
-  rm -rf "$LAB_FARM_STATE" "$FARM_FILE" "$LAB_DIR/autonomy"
+  rm -rf "$LAB_FARM_STATE" "$FARM_FILE" "$FARM_REAL_FILE" "$LAB_DIR/autonomy"
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" reset || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" reset || true
   docker network rm "$LAB_NETWORK" >/dev/null 2>&1 || true
@@ -229,9 +277,11 @@ cmd_farm() {
   case "${1:-}" in
     events) station_events "${2:-20}" ${3:+"$3"} ;;
     set) [ $# -ge 3 ] || die "usage: lab.sh farm set <entity> <state>"
-         ha_admin POST /_lab/set "{\"entity_id\":\"$2\",\"state\":\"$3\"}" ;;
-    restart-ha) ha_admin POST /_lab/restart "{\"seconds\":${2:-10}}" ;;
-    writes) ha_admin GET /_lab/writes ;;
+         if farm_real; then ha_real_set "$2" "$3"; else ha_admin POST /_lab/set "{\"entity_id\":\"$2\",\"state\":\"$3\"}"; fi ;;
+    restart-ha) farm_real && die "restart-ha is for the stand-in; with --farm-config use: docker restart ${LAB_PROJECT}-ha"
+                ha_admin POST /_lab/restart "{\"seconds\":${2:-10}}" ;;
+    writes) farm_real && die "the write log is the stand-in's; with --farm-config the cell is read-only by construction (see farm-config scenarios)"
+            ha_admin GET /_lab/writes ;;
     *) die "usage: lab.sh farm events [n] [kind] | set <entity> <state> | restart-ha [seconds] | writes" ;;
   esac
 }
@@ -328,6 +378,42 @@ verify_farm() {
   ok
 }
 
+# --farm-config: the real Home Assistant with the farm_automation packages (the stand-in's scenarios do not apply)
+verify_farm_config() {
+  local out
+  step farm-config-observe
+  wait_events observation.state 'sensor.farm_soil_tree_row_1_moisture.*"state": "35' 90
+  out="$(station_events 5000 observation.state)"
+  grep -q 'binary_sensor.farm_soil_tree_row_1_data_valid.*"state": "on"' <<< "$out" || die "the validity flag never became on: $out"
+  ok
+
+  step farm-config-invalid
+  ha_real_set sensor.wh51_ch3_soil_moisture 140 # impossible: the package must refuse it
+  wait_events observation.state 'binary_sensor.farm_soil_tree_row_1_data_valid.*"state": "off"' 90
+  wait_events observation.state 'sensor.farm_soil_tree_row_1_moisture.*"state": "unavailable"' 60
+  ok
+
+  step farm-config-recover
+  ha_real_set sensor.wh51_ch3_soil_moisture 33
+  wait_events observation.state 'sensor.farm_soil_tree_row_1_moisture.*"state": "33' 90
+  ok
+
+  step farm-config-allowlist
+  ha_real_set lock.front_door unlocked
+  sleep 4
+  ! grep -q "lock.front_door" <<< "$(station_events 5000 observation.state)" || die "an entity that is not on the allowlist was recorded"
+  ok
+}
+
+verify_farm_config_bot() { # /farm shows the farm_* sensors computed by Home Assistant
+  local out
+  step farm-config-bot; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/farm"
+  wait_reply 'connected to home assistant' 90
+  out="$(tg GET /_lab/sent | tr '[:upper:]' '[:lower:]')"
+  grep -q "farm soil tree row 1 moisture" <<< "$out" || die "/farm does not show the farm_* soil sensor: $out"
+  ok
+}
+
 verify_farm_bot() { # /farm in Telegram shows what the cell saw, and only that
   local out
   step farm-bot; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/farm"
@@ -342,7 +428,8 @@ verify_farm_bot() { # /farm in Telegram shows what the cell saw, and only that
 cmd_verify() {
   if [ "${1:-}" = farm ]; then # only the farm scenarios (needs just `up --only farm`)
     farm_on || die "the farm profile is not up: ops/lab/lab.sh up --only farm"
-    verify_farm; say "farm scenarios passed"; return 0
+    if farm_real; then verify_farm_config; else verify_farm; fi
+    say "farm scenarios passed"; return 0
   fi
   mock_on || die "verify needs the mocked Telegram API: ops/lab/lab.sh up --mock-telegram"
   local log="$LAB_DIR/processor/mock-llm/mock-llm.jsonl" code
@@ -383,7 +470,8 @@ cmd_verify() {
   step reboot;   tg POST /_lab/clear '{}' >/dev/null; code="$(fresh_code)"; cmd_say "/reboot $code"
   wait_reply 'back online after reboot' 180; ok
 
-  if farm_on; then verify_farm; verify_farm_bot; fi
+  if farm_real; then verify_farm_config; verify_farm_config_bot
+  elif farm_on; then verify_farm; verify_farm_bot; fi
 
   step no-leaks
   local tok totp key

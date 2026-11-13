@@ -68,6 +68,22 @@ farm-heartbeat (memory under 300 MB), farm-no-writes and farm-bot (`/farm` in Te
 and nothing off the allowlist; needs `up --farm`, not `--only farm`). The same cell runs on a real Home Assistant as the
 add-on in `ops/ha-addon/autonomy-station/`.
 
+### With the farm's own configuration (`--farm-config`, the fourth repository)
+
+`ops/lab/lab.sh up --mock-telegram --farm-config` needs a checkout of `realsystem/farm_automation` next to the
+others (`LAB_REPOS/farm_automation`) and replaces the stand-in with a **real Home Assistant** (`ghcr.io/home-assistant/home-assistant`,
+about 700 MB) that loads that repository's `homeassistant/` packages. The lab gets a token through Home Assistant's
+onboarding API, seeds the raw soil entities (`sensor.wh51_ch*_soil_moisture`, as a gateway integration would),
+and starts the cell with the allowlist printed by the repository's own `tools/farm.py allowlist`, so the list can't
+drift from `farm/farm_core.yaml`. `farm set sensor.wh51_ch3_soil_moisture 140` then shows the package's validity rule at
+work (the `farm_soil_*` sensors go unavailable), and `/farm` shows what Home Assistant computed.
+
+`verify` runs farm-config-observe, farm-config-invalid, farm-config-recover, farm-config-allowlist and farm-config-bot
+instead of the stand-in's scenarios. Each repository stays usable alone: without the flag the lab never touches
+farm_automation, and farm_automation needs nothing from the lab. Not covered: the Ecowitt integration itself (the lab
+writes the raw states directly), OpenSprinkler, and the stand-in's write log (the cell is read only by construction).
+Status: written without a Docker daemon, so the first run on a laptop is its first test.
+
 ## The owner's authority (A1 grant)
 
 `up` also makes a lab authority (`ops/lab/authority/`): lab-only owner keys, a signed registry and a signed

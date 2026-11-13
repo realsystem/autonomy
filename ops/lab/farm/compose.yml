@@ -9,6 +9,7 @@ networks:
 
 services:
   ha:
+    profiles: [stub]
     build: {context: ./ha-stub}
     image: alab-ha-stub:lab
     container_name: ${LAB_PROJECT:-alab}-ha
@@ -19,21 +20,36 @@ services:
     networks: [lab]
     restart: unless-stopped
 
+  # --farm-config: a real Home Assistant (profile "real") loading the farm_automation repository's
+  # homeassistant/ packages. Same container name, so the station finds it at the same address.
+  ha-real:
+    profiles: [real]
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ${LAB_PROJECT:-alab}-ha
+    labels: {autonomy.lab: "true"}
+    volumes:
+      - ${LAB_STATE:?}/ha-config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://127.0.0.1:8123/manifest.json"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    networks: [lab]
+    restart: unless-stopped
+
   station:
     build: {context: "${LAB_AUTONOMY_DIR:?}", dockerfile: ops/lab/farm/station.Dockerfile}
     image: alab-station:lab
     container_name: ${LAB_PROJECT:-alab}-station
     labels: {autonomy.lab: "true"}
     environment:
-      - HA_TOKEN=lab-ha-token
+      - HA_TOKEN=${LAB_HA_TOKEN:-lab-ha-token}
     volumes:
       - ${LAB_STATE:?}/config:/config:ro
       - station-data:/data
       - ${LAB_STATE:?}/status:/status
     networks: [lab]
-    depends_on:
-      ha: {condition: service_healthy}
-    restart: unless-stopped
+    restart: unless-stopped # lab.sh starts it after Home Assistant is healthy (and has a token)
 
 volumes:
   station-data: {}
