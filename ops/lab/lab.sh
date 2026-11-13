@@ -3,7 +3,7 @@
 # (processor/lab), the edge node with stand-ins for Frigate and the host helpers
 # (edge_server/lab), and a real or mocked Telegram. No real model, no hardware, no cloud.
 #
-#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--only processor|edge_server|farm]
+#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--baseline] [--only processor|edge_server|farm]
 #   ops/lab/lab.sh down | status | logs [service] | reset | check
 #   ops/lab/lab.sh verify                 all scenarios, automatically (needs --mock-telegram)
 #   ops/lab/lab.sh scenarios              what to try by hand
@@ -54,6 +54,14 @@ preflight() {
 }
 
 mock_on() { [ "$(cat "$MODE_FILE" 2>/dev/null)" = "mock" ]; }
+grant_on() { [ -s "$LAB_DIR/autonomy/policy-bundle.json" ]; }
+
+authority() { # owner keys, a signed registry and policy bundle with an A1 grant for the node assistant
+  mkdir -p "$LAB_DIR/autonomy"
+  docker build -q -t alab-authority:lab -f "$HERE/authority/Dockerfile" "$AUTONOMY" >/dev/null
+  docker run --rm --user "$(id -u):$(id -g)" -v "$LAB_DIR/autonomy:/out" alab-authority:lab /out | sed 's/^/  /'
+}
+
 farm_on() { [ -f "$FARM_FILE" ]; }
 
 farmc() { LAB_STATE="$LAB_FARM_STATE" docker compose -f "$FARM/compose.yml" "$@"; }
@@ -101,7 +109,7 @@ print(urllib.request.urlopen(r, timeout=30).read().decode())' "$@"
 }
 
 cmd_up() {
-  local only="" edge_args=() proc_args=() a farm=0
+  local only="" edge_args=() proc_args=() a farm=0 baseline=0
   while [ $# -gt 0 ]; do
     a="$1"; shift
     case "$a" in
@@ -109,6 +117,7 @@ cmd_up() {
       --pinned) edge_args+=("$a") ;;
       --only) only="${1:-}"; shift || true ;;
       --farm) farm=1 ;;
+      --baseline) baseline=1 ;; # no owner authority: the baseline policy, so /ask can only suggest
       *) die "unknown option $a" ;;
     esac
   done
@@ -125,6 +134,9 @@ cmd_up() {
   if [ "$farm" = 1 ]; then # the bot's /farm reads the cell's status file from this directory
     mkdir -p "$LAB_FARM_STATE/status"; chmod 777 "$LAB_FARM_STATE/status"
     export LAB_FARM=1 LAB_FARM_STATUS_DIR="$LAB_FARM_STATE/status"
+  fi
+  if [ -z "$only" ] || [ "$only" = edge_server ]; then
+    if [ "$baseline" = 1 ]; then rm -rf "$LAB_DIR/autonomy/policy-bundle.json" "$LAB_DIR/autonomy/registry"; else authority; fi
   fi
   if [ -z "$only" ] || [ "$only" = processor ]; then
     "$PROC/lab/lab.sh" up ${proc_args[@]+"${proc_args[@]}"}
@@ -168,11 +180,11 @@ cmd_down() {
 
 cmd_reset() {
   if [ -f "$FARM/compose.yml" ]; then LAB_STATE="$LAB_FARM_STATE" farmc down -v --remove-orphans >/dev/null 2>&1 || true; fi
-  rm -rf "$LAB_FARM_STATE" "$FARM_FILE"
+  rm -rf "$LAB_FARM_STATE" "$FARM_FILE" "$LAB_DIR/autonomy"
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" reset || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" reset || true
   docker network rm "$LAB_NETWORK" >/dev/null 2>&1 || true
-  rm -f "$MODE_FILE" "$LAB_DIR"/*.env.bak
+  rm -f "$MODE_FILE" "$LAB_DIR"/*.env.bak "$LAST_CODE_FILE"
   say "reset: containers, volumes and lab state removed. Kept: $SECRETS (your lab token and TOTP secret)"
 }
 
@@ -228,12 +240,13 @@ cmd_cam() { "$EDGE/lab/lab.sh" cam "$@"; }
 
 # ---- verify: the scenarios, automatically (mocked Telegram) -------------------------------
 
-LAST_CODE=""
+LAST_CODE_FILE="$LAB_DIR/last-code" # fresh_code runs in $( ), so a variable would not survive
 fresh_code() { # a code the bot has not seen: wait for the next 30 s window if needed
-  local c
+  local c last
+  last="$(cat "$LAST_CODE_FILE" 2>/dev/null || true)"
   for _ in $(seq 1 20); do
     c="$(cmd_code)"
-    [ "$c" != "$LAST_CODE" ] && { LAST_CODE="$c"; echo "$c"; return 0; }
+    [ "$c" != "$last" ] && { printf '%s' "$c" > "$LAST_CODE_FILE"; echo "$c"; return 0; }
     sleep 2
   done
   die "no fresh code"
@@ -341,11 +354,25 @@ cmd_verify() {
   wait_reply 'mock-llm' 90
   grep -q "how is the node" "$log" || die "the question never reached mock-llm ($log)"; ok
 
-  step ask-restart; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/ask frigate looks stuck, no detections"
-  wait_reply 'restarting frigate may help|waits for you as' 90
-  tg POST /_lab/clear '{}' >/dev/null
-  cmd_say "/restart frigate $(fresh_code)"
-  wait_reply 'restarted frigate' 150; ok
+  if grant_on; then
+    # the owner's A1 grant: the assistant's restart proposal is permitted, waits for the owner, then runs
+    step ask-grant; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/ask frigate looks stuck, no detections"
+    wait_reply 'waits for you as' 90
+    req="$(tg GET /_lab/sent | grep -oE 'waits for you as [A-Za-z0-9_]+' | head -1 | awk '{print $NF}')"
+    [ -n "$req" ] || die "no approval request id in the reply"
+    tg POST /_lab/clear '{}' >/dev/null; cmd_say "/pending"; wait_reply 'approval\(s\) waiting' 60
+    tg POST /_lab/clear '{}' >/dev/null; cmd_say "/approve $req $(fresh_code)"
+    wait_reply 'approved; the action is' 90
+    tg POST /_lab/clear '{}' >/dev/null; cmd_say "/audit"; wait_reply 'approval.requested' 60
+    case "$(tg GET /_lab/sent)" in *action.started*) ;; *) die "no action.started in the audit after the approval" ;; esac
+    ok
+  else
+    step ask-restart; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/ask frigate looks stuck, no detections"
+    wait_reply 'restarting frigate may help|waits for you as' 90
+    tg POST /_lab/clear '{}' >/dev/null
+    cmd_say "/restart frigate $(fresh_code)"
+    wait_reply 'restarted frigate' 150; ok
+  fi
 
   step model-error; "$PROC/lab/lab.sh" llm error >/dev/null; tg POST /_lab/clear '{}' >/dev/null
   cmd_say "/ask are you there?"; wait_reply 'no model answered|assistant failed' 150
