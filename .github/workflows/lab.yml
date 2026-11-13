@@ -2,10 +2,18 @@ name: Lab
 
 # The whole lab (design/lab.md): processor + edge_server + this repo's orchestrator, with a
 # mocked Telegram API and a fake model. Real containers, no real model, no hardware.
-# processor is a private repository: add a repository secret LAB_REPOS_TOKEN (a fine-grained
-# token with read access to realsystem/processor) to run the full lab; without it that job
-# is skipped and the script checks still run.
+# processor and farm_automation are private repositories, and Actions in a private repository
+# needs GitHub billing. The lab therefore runs here, in this public repository, which is free:
+# add a repository secret LAB_REPOS_TOKEN (a fine-grained personal access token, resource owner
+# realsystem, repositories processor and farm_automation, permission "Contents: read" only).
+# Without it the jobs that need those repositories are skipped and the script checks still run.
+# Once processor is public its checkout needs no token; farm_automation stays private.
+#
+#   every PR / push that touches the lab or core:  lab (processor + edge_server + this repo)
+#   nightly and on demand:                         lab-farm-config (all four, real Home Assistant)
 on:
+  schedule:
+    - cron: "41 10 * * *" # nightly, 02:41 Pacific
   pull_request:
     paths: ["ops/lab/**", "design/lab.md", ".github/workflows/lab.yml", "core/python/**"]
   push:
@@ -83,6 +91,53 @@ jobs:
       - name: Logs
         if: always() && env.HAS_TOKEN == 'true'
         run: autonomy/ops/lab/lab.sh logs | tail -200
+      - name: Reset
+        if: always() && env.HAS_TOKEN == 'true'
+        run: autonomy/ops/lab/lab.sh reset
+
+  lab-farm-config:
+    name: whole stack with real Home Assistant and the farm configuration (nightly)
+    # not on pull requests: it pulls the Home Assistant image (about 700 MB) and takes a while
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HAS_TOKEN: ${{ secrets.LAB_REPOS_TOKEN != '' }}
+      LAB_DIR: /tmp/autonomy-lab
+    steps:
+      - name: Needs the LAB_REPOS_TOKEN secret (processor and farm_automation are private)
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::LAB_REPOS_TOKEN is not set, so this job was skipped (see the workflow header)"
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          path: autonomy
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          repository: realsystem/edge_server
+          path: edge_server
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          repository: realsystem/processor
+          path: processor
+          token: ${{ secrets.LAB_REPOS_TOKEN }}
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          repository: realsystem/farm_automation
+          path: farm_automation
+          token: ${{ secrets.LAB_REPOS_TOKEN }}
+      - name: Up (four checkouts, real Home Assistant loading farm_automation's packages)
+        if: env.HAS_TOKEN == 'true'
+        run: autonomy/ops/lab/lab.sh up --mock-telegram --farm-config
+      - name: Verify every scenario (the farm-config ones replace the stand-in's)
+        if: env.HAS_TOKEN == 'true'
+        run: autonomy/ops/lab/lab.sh verify
+      - name: Logs
+        if: always() && env.HAS_TOKEN == 'true'
+        run: autonomy/ops/lab/lab.sh logs | tail -300; autonomy/ops/lab/lab.sh logs ha | tail -100
       - name: Reset
         if: always() && env.HAS_TOKEN == 'true'
         run: autonomy/ops/lab/lab.sh reset
