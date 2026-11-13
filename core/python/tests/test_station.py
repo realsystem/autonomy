@@ -37,7 +37,9 @@ def ha():
 
 
 def post(ha, path, body):
-    r = urllib.request.Request(ha.http + path, json.dumps(body).encode(), {"Content-Type": "application/json"})
+    r = urllib.request.Request(
+        ha.http + path, json.dumps(body).encode(), {"Content-Type": "application/json"}
+    )
     return json.load(urllib.request.urlopen(r, timeout=5))
 
 
@@ -151,8 +153,15 @@ class TestEventLog:
 
 class TestStation:
     def cfg(self, ha, tmp_path, **kw):
-        return StationConfig(ha_url=ha.url, token=ha.TOKEN, allow=ALLOW, db=str(tmp_path / "e.db"),
-                             heartbeat_s=0.3, backoff_max_s=1.0, **kw)
+        return StationConfig(
+            ha_url=ha.url,
+            token=ha.TOKEN,
+            allow=ALLOW,
+            db=str(tmp_path / "e.db"),
+            heartbeat_s=0.3,
+            backoff_max_s=1.0,
+            **kw,
+        )
 
     def start(self, ha, tmp_path):
         log = EventLog(tmp_path / "e.db")
@@ -177,7 +186,7 @@ class TestStation:
             assert n0 >= 15
             post(ha, "/_lab/set", {"entity_id": "sensor.ws90_temperature", "state": "31.0"})
             post(ha, "/_lab/set", {"entity_id": "sensor.ws90_temperature", "state": "31.0"})  # same: no event
-            post(ha, "/_lab/set", {"entity_id": "lock.front_door", "state": "unlocked"})      # not allowed
+            post(ha, "/_lab/set", {"entity_id": "lock.front_door", "state": "unlocked"})  # not allowed
             assert self.wait(lambda: log.count("observation.state") == n0 + 1)
             subjects = {e["subject"] for e in log.tail(1000, kind="observation.state")}
             assert "lock.front_door" not in subjects
@@ -198,8 +207,11 @@ class TestStation:
             assert self.wait(lambda: log.count("station.disconnected") >= 1)
             assert self.wait(lambda: log.count("station.connected") >= 2, timeout=20)
             post(ha, "/_lab/set", {"entity_id": "sensor.wh51_ch1_soil_moisture", "state": "55"})
-            assert self.wait(lambda: any(e["data"]["state"] == "55" for e in
-                                         log.tail(50, subject="sensor.wh51_ch1_soil_moisture")))
+            assert self.wait(
+                lambda: any(
+                    e["data"]["state"] == "55" for e in log.tail(50, subject="sensor.wh51_ch1_soil_moisture")
+                )
+            )
             beats = log.tail(100, kind="cell.heartbeat")
             assert any(b["data"]["connected"] is False for b in beats)  # it said so while HA was away
         finally:
@@ -208,8 +220,11 @@ class TestStation:
 
     def test_config_loading(self, tmp_path, monkeypatch):
         (tmp_path / "tok").write_text("from-file\n")
-        (tmp_path / "c.json").write_text(json.dumps({"ha_url": "ws://x/y", "allow": ["sensor.a"],
-                                                      "token_file": str(tmp_path / "tok"), "bogus": 1}))
+        (tmp_path / "c.json").write_text(
+            json.dumps(
+                {"ha_url": "ws://x/y", "allow": ["sensor.a"], "token_file": str(tmp_path / "tok"), "bogus": 1}
+            )
+        )
         monkeypatch.delenv("SUPERVISOR_TOKEN", raising=False)
         monkeypatch.delenv("HA_TOKEN", raising=False)
         cfg = StationConfig.load(tmp_path / "c.json")

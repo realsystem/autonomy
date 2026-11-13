@@ -32,7 +32,9 @@ class EventLog:
         )
         self.db.execute("CREATE INDEX IF NOT EXISTS events_kind_subject ON events(kind, subject, seq)")
 
-    def append(self, kind: str, subject: str = "", data: dict[str, Any] | None = None, ts: float | None = None) -> int:
+    def append(
+        self, kind: str, subject: str = "", data: dict[str, Any] | None = None, ts: float | None = None
+    ) -> int:
         with self._lock:
             cur = self.db.execute(
                 "INSERT INTO events(ts, kind, subject, data) VALUES (?, ?, ?, ?)",
@@ -66,7 +68,9 @@ class EventLog:
     def count(self, kind: str | None = None) -> int:
         with self._lock:
             if kind:
-                return int(self.db.execute("SELECT COUNT(*) FROM events WHERE kind = ?", (kind,)).fetchone()[0])
+                return int(
+                    self.db.execute("SELECT COUNT(*) FROM events WHERE kind = ?", (kind,)).fetchone()[0]
+                )
             return int(self.db.execute("SELECT COUNT(*) FROM events").fetchone()[0])
 
     def prune(self, older_than_s: float) -> int:

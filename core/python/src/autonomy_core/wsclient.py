@@ -75,7 +75,7 @@ class WebSocket:
         self.sock.settimeout(remaining)
         try:
             chunk = self.sock.recv(65536)
-        except (TimeoutError, socket.timeout):
+        except TimeoutError:
             return False
         except ssl.SSLWantReadError:
             return False
