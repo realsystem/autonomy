@@ -8,7 +8,7 @@ version = "0.7.0"
 description = "Autonomy core library (C02) and owner registry tools (C03): envelopes, signatures, replay protection, outbox, audit chain, signed registry"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Proprietary"}
+license = {text = "Apache-2.0"}
 dependencies = ["cryptography>=41"]
 
 [project.optional-dependencies]

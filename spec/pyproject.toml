@@ -8,7 +8,7 @@ version = "0.6.0"
 description = "Autonomy contracts (C01): JSON Schemas, fixtures and the conformance CLI"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Proprietary"}
+license = {text = "Apache-2.0"}
 dependencies = [
   "jsonschema>=4.18",
   "referencing>=0.30",

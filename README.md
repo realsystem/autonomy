@@ -21,3 +21,7 @@ A modular, distributed system that progressively takes over ongoing responsibili
 
 - [`farm_automation`](https://github.com/realsystem/farm_automation) — Field Station monitoring and irrigation design; the first reference deployment
 - [`edge_server`](https://github.com/realsystem/edge_server), [`processor`](https://github.com/realsystem/processor), [`farm_agent`](https://github.com/realsystem/farm_agent) — existing projects that become platform components (see [repository-mapping](design/repository-mapping.md))
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE).
