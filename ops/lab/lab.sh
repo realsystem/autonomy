@@ -184,7 +184,7 @@ cmd_reset() {
   [ -x "$EDGE/lab/lab.sh" ] && "$EDGE/lab/lab.sh" reset || true
   [ -x "$PROC/lab/lab.sh" ] && "$PROC/lab/lab.sh" reset || true
   docker network rm "$LAB_NETWORK" >/dev/null 2>&1 || true
-  rm -f "$MODE_FILE" "$LAB_DIR"/*.env.bak
+  rm -f "$MODE_FILE" "$LAB_DIR"/*.env.bak "$LAST_CODE_FILE"
   say "reset: containers, volumes and lab state removed. Kept: $SECRETS (your lab token and TOTP secret)"
 }
 
@@ -240,12 +240,13 @@ cmd_cam() { "$EDGE/lab/lab.sh" cam "$@"; }
 
 # ---- verify: the scenarios, automatically (mocked Telegram) -------------------------------
 
-LAST_CODE=""
+LAST_CODE_FILE="$LAB_DIR/last-code" # fresh_code runs in $( ), so a variable would not survive
 fresh_code() { # a code the bot has not seen: wait for the next 30 s window if needed
-  local c
+  local c last
+  last="$(cat "$LAST_CODE_FILE" 2>/dev/null || true)"
   for _ in $(seq 1 20); do
     c="$(cmd_code)"
-    [ "$c" != "$LAST_CODE" ] && { LAST_CODE="$c"; echo "$c"; return 0; }
+    [ "$c" != "$last" ] && { printf '%s' "$c" > "$LAST_CODE_FILE"; echo "$c"; return 0; }
     sleep 2
   done
   die "no fresh code"
