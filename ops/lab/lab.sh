@@ -43,6 +43,7 @@ preflight() {
   docker info >/dev/null 2>&1 || die "docker is not running (start Docker Desktop)"
   local name dir
   for name in processor edge_server autonomy; do
+    if [ "${LAB_ONLY:-}" = farm ] && [ "$name" != autonomy ]; then continue; fi
     case "$name" in processor) dir="$PROC" ;; edge_server) dir="$EDGE" ;; *) dir="$AUTONOMY" ;; esac
     [ -d "$dir/.git" ] || die "no $name checkout at $dir (LAB_REPOS=$LAB_REPOS)"
     [ "$name" = autonomy ] || [ -x "$dir/lab/lab.sh" ] || die "$name has no lab/lab.sh: git pull in $dir (the lab needs its latest main)"
@@ -70,6 +71,7 @@ station_events() { # n [kind]
 }
 
 farm_up() {
+  docker network inspect "$LAB_NETWORK" >/dev/null 2>&1 || docker network create "$LAB_NETWORK" >/dev/null
   mkdir -p "$LAB_FARM_STATE/config"
   cp "$FARM/station.json" "$LAB_FARM_STATE/config/station.json"
   farmc up -d --build --wait
@@ -112,7 +114,7 @@ cmd_up() {
   case "$only" in ""|processor|edge_server|farm) ;; *) die "--only is processor, edge_server or farm" ;; esac
   [ "$only" = farm ] && farm=1
   say "what will be built:"
-  preflight
+  LAB_ONLY="$only" preflight
   mkdir -p "$LAB_DIR"
   if [ "$only" != farm ]; then
     case " ${edge_args[*]:-} " in *" --mock-telegram "*) echo mock > "$MODE_FILE" ;; *) echo real > "$MODE_FILE" ;; esac
@@ -127,7 +129,9 @@ cmd_up() {
   fi
   if [ "$farm" = 1 ]; then farm_up; farm_check; fi
   [ -n "$only" ] || cmd_check
-  if mock_on; then
+  if [ "$only" = farm ]; then
+    say "farm up. Next: ops/lab/lab.sh farm events 20   or   ops/lab/lab.sh verify farm"
+  elif mock_on; then
     say "up (mock Telegram). Next: ops/lab/lab.sh verify, or  ops/lab/lab.sh say \"/ask how is the node?\"  then  replies"
   else
     say "up. In Telegram, message your lab bot (it answers only user id $(secret LAB_TELEGRAM_ID)):"
@@ -307,6 +311,10 @@ verify_farm() {
 }
 
 cmd_verify() {
+  if [ "${1:-}" = farm ]; then # only the farm scenarios (needs just `up --only farm`)
+    farm_on || die "the farm profile is not up: ops/lab/lab.sh up --only farm"
+    verify_farm; say "farm scenarios passed"; return 0
+  fi
   mock_on || die "verify needs the mocked Telegram API: ops/lab/lab.sh up --mock-telegram"
   local log="$LAB_DIR/processor/mock-llm/mock-llm.jsonl" code
   { : > "$log"; } 2>/dev/null || true
@@ -353,7 +361,7 @@ case "${1:-}" in
   status) cmd_status ;;
   logs) shift; cmd_logs "$@" ;;
   check) preflight; cmd_check ;;
-  verify) cmd_verify ;;
+  verify) shift; cmd_verify "$@" ;;
   scenarios) cmd_scenarios ;;
   llm) shift; cmd_llm "$@" ;;
   code) cmd_code ;;

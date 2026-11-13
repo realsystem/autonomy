@@ -29,6 +29,25 @@ jobs:
       - run: bash -n ops/lab/lab.sh
       - run: shellcheck --severity=warning ops/lab/lab.sh
 
+  farm:
+    name: farm profile (Field Station)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LAB_DIR: /tmp/autonomy-lab
+    steps:
+      - uses: actions/checkout@v4
+      - name: Up (Home Assistant stand-in and the read-only cell, built from this checkout)
+        run: ops/lab/lab.sh up --only farm
+      - name: Verify the farm scenarios
+        run: ops/lab/lab.sh verify farm
+      - name: Logs
+        if: always()
+        run: ops/lab/lab.sh logs ha; ops/lab/lab.sh logs station
+      - name: Reset
+        if: always()
+        run: ops/lab/lab.sh reset
+
   lab:
     name: lab up and verify
     runs-on: ubuntu-latest
