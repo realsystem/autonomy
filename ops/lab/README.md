@@ -61,7 +61,9 @@ panel, a phone location) that are not on the allowlist, and refuses and records 
     ops/lab/lab.sh farm set sensor.ws90_temperature 35    change a sensor value
     ops/lab/lab.sh farm restart-ha 10                     Home Assistant goes away; the cell reconnects
     ops/lab/lab.sh farm writes                            every write attempt (must stay empty)
+    /farm  (in Telegram)                                  the latest readings, read by the bot from the cell's status file
 
-`verify` adds five scenarios when the profile is up: farm-observe, farm-change, farm-ha-restart,
-farm-heartbeat (memory under 300 MB) and farm-no-writes. The same cell runs on a real Home Assistant as the
+`verify` adds six scenarios when the profile is up: farm-observe, farm-change, farm-ha-restart,
+farm-heartbeat (memory under 300 MB), farm-no-writes and farm-bot (`/farm` in Telegram shows the readings
+and nothing off the allowlist; needs `up --farm`, not `--only farm`). The same cell runs on a real Home Assistant as the
 add-on in `ops/ha-addon/autonomy-station/`.

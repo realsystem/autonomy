@@ -76,7 +76,7 @@ jobs:
           token: ${{ secrets.LAB_REPOS_TOKEN }}
       - name: Up (builds from the three checkouts, mocked Telegram)
         if: env.HAS_TOKEN == 'true'
-        run: autonomy/ops/lab/lab.sh up --mock-telegram
+        run: autonomy/ops/lab/lab.sh up --mock-telegram --farm
       - name: Verify every scenario
         if: env.HAS_TOKEN == 'true'
         run: autonomy/ops/lab/lab.sh verify
