@@ -122,6 +122,10 @@ cmd_up() {
   fi
   [ "$farm" = 1 ] || rm -f "$FARM_FILE"
 
+  if [ "$farm" = 1 ]; then # the bot's /farm reads the cell's status file from this directory
+    mkdir -p "$LAB_FARM_STATE/status"; chmod 777 "$LAB_FARM_STATE/status"
+    export LAB_FARM=1 LAB_FARM_STATUS_DIR="$LAB_FARM_STATE/status"
+  fi
   if [ -z "$only" ] || [ "$only" = processor ]; then
     "$PROC/lab/lab.sh" up ${proc_args[@]+"${proc_args[@]}"}
   fi
@@ -311,6 +315,17 @@ verify_farm() {
   ok
 }
 
+verify_farm_bot() { # /farm in Telegram shows what the cell saw, and only that
+  local out
+  step farm-bot; tg POST /_lab/clear '{}' >/dev/null; cmd_say "/farm"
+  wait_reply 'connected to home assistant' 90
+  out="$(tg GET /_lab/sent | tr '[:upper:]' '[:lower:]')"
+  grep -q "ws90 temperature" <<< "$out" || die "/farm does not show the weather station: $out"
+  grep -q "wh51 ch1 soil moisture" <<< "$out" || die "/farm does not show the soil sensor: $out"
+  if grep -qE "front door|alarm|owner phone|do not leak" <<< "$out"; then die "/farm showed an entity that is not on the allowlist"; fi
+  ok
+}
+
 cmd_verify() {
   if [ "${1:-}" = farm ]; then # only the farm scenarios (needs just `up --only farm`)
     farm_on || die "the farm profile is not up: ops/lab/lab.sh up --only farm"
@@ -341,7 +356,7 @@ cmd_verify() {
   step reboot;   tg POST /_lab/clear '{}' >/dev/null; code="$(fresh_code)"; cmd_say "/reboot $code"
   wait_reply 'back online after reboot' 180; ok
 
-  if farm_on; then verify_farm; fi
+  if farm_on; then verify_farm; verify_farm_bot; fi
 
   step no-leaks
   local tok totp key
