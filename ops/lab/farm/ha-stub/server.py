@@ -30,11 +30,11 @@ import time
 TOKEN = os.environ.get("HA_TOKEN", "lab-ha-token")
 TICK = float(os.environ.get("SIM_TICK", "5"))
 PORT = int(os.environ.get("PORT", "8123"))
-GUID = b"258EAF5A-9A8E-11C5-A9DC-65B49B1A9ADC"
+GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"  # RFC 6455 section 1.3 (the stand-in must not share a mistake with the client)
 
 LOCK = threading.RLock()
 STATES: dict = {}
-CLIENTS: list = []          # [(socket, send_lock, subscription ids)]
+CLIENTS: list = []  # [(socket, send_lock, subscription ids)]
 WRITES: list = []
 DOWN_UNTIL = [0.0]
 
@@ -49,12 +49,22 @@ def put(entity_id, state, **attrs):
         old = STATES.get(entity_id)
         if old and old["state"] == str(state) and not attrs:
             return
-        new = {"entity_id": entity_id, "state": str(state),
-               "attributes": {**(old["attributes"] if old else {}), **attrs},
-               "last_changed": iso(), "last_updated": iso()}
+        new = {
+            "entity_id": entity_id,
+            "state": str(state),
+            "attributes": {**(old["attributes"] if old else {}), **attrs},
+            "last_changed": iso(),
+            "last_updated": iso(),
+        }
         STATES[entity_id] = new
-        event = {"type": "event", "event": {"event_type": "state_changed", "time_fired": iso(),
-                 "data": {"entity_id": entity_id, "old_state": old, "new_state": new}}}
+        event = {
+            "type": "event",
+            "event": {
+                "event_type": "state_changed",
+                "time_fired": iso(),
+                "data": {"entity_id": entity_id, "old_state": old, "new_state": new},
+            },
+        }
         for sock, send_lock, subs in list(CLIENTS):
             for sid in list(subs):
                 try:
@@ -113,12 +123,28 @@ def simulate():
         hour = (time.time() % 86400) / 3600.0
         sun = max(0.0, math.sin((hour - 6) / 12 * math.pi))
         temp = 16 + 10 * sun + random.uniform(-0.3, 0.3)
-        rain = max(0.0, rain + random.uniform(-0.4, 0.5)) if random.random() < 0.1 or rain else 0.0
+        rain = (
+            max(0.0, rain + random.uniform(-0.4, 0.5))
+            if random.random() < 0.1 or rain
+            else 0.0
+        )
         for n in soil:
-            soil[n] = min(60.0, max(12.0, soil[n] + 0.3 * rain - 0.05 * (1 + sun) + random.uniform(-0.05, 0.05)))
+            soil[n] = min(
+                60.0,
+                max(
+                    12.0,
+                    soil[n]
+                    + 0.3 * rain
+                    - 0.05 * (1 + sun)
+                    + random.uniform(-0.05, 0.05),
+                ),
+            )
             put(f"sensor.wh51_ch{n}_soil_moisture", f"{soil[n]:.0f}")
         put("sensor.ws90_temperature", f"{temp:.1f}")
-        put("sensor.ws90_humidity", f"{max(20, 80 - 35 * sun + random.uniform(-2, 2)):.0f}")
+        put(
+            "sensor.ws90_humidity",
+            f"{max(20, 80 - 35 * sun + random.uniform(-2, 2)):.0f}",
+        )
         put("sensor.ws90_wind_speed", f"{max(0, 2 + random.uniform(-1, 2)):.1f}")
         put("sensor.ws90_rain_rate", f"{rain:.1f}")
         put("sensor.ws90_solar_radiation", f"{900 * sun:.0f}")
@@ -127,11 +153,17 @@ def simulate():
 
 # -- WebSocket (server side) ------------------------------------------------------------------
 
+
 def ws_send(sock, send_lock, obj):
     data = json.dumps(obj).encode()
     n = len(data)
-    head = bytes([0x81]) + (bytes([n]) if n < 126 else bytes([126]) + struct.pack(">H", n)
-                            if n < 65536 else bytes([127]) + struct.pack(">Q", n))
+    head = bytes([0x81]) + (
+        bytes([n])
+        if n < 126
+        else bytes([126]) + struct.pack(">H", n)
+        if n < 65536
+        else bytes([127]) + struct.pack(">Q", n)
+    )
     with send_lock:
         sock.sendall(head + data)
 
@@ -164,8 +196,11 @@ class Handler(socketserver.StreamRequestHandler):
 
     def _http(self, code, body, ctype="application/json"):
         raw = body if isinstance(body, bytes) else json.dumps(body).encode()
-        self.wfile.write(f"HTTP/1.1 {code} X\r\nContent-Type: {ctype}\r\nContent-Length: {len(raw)}\r\n"
-                         f"Connection: close\r\n\r\n".encode() + raw)
+        self.wfile.write(
+            f"HTTP/1.1 {code} X\r\nContent-Type: {ctype}\r\nContent-Length: {len(raw)}\r\n"
+            f"Connection: close\r\n\r\n".encode()
+            + raw
+        )
 
     def _handle(self):
         line = self.rfile.readline().decode("latin-1").strip()
@@ -183,7 +218,10 @@ class Handler(socketserver.StreamRequestHandler):
             return self._http(503, {"error": "Home Assistant is starting"})
         length = int(headers.get("content-length", 0))
         body = self.rfile.read(length) if length else b""
-        if headers.get("upgrade", "").lower() == "websocket" and path == "/api/websocket":
+        if (
+            headers.get("upgrade", "").lower() == "websocket"
+            and path == "/api/websocket"
+        ):
             return self._websocket(headers)
         authed = headers.get("authorization") == f"Bearer {TOKEN}"
         if path == "/health":
@@ -219,19 +257,31 @@ class Handler(socketserver.StreamRequestHandler):
             return self._http(200 if s else 404, s or {"message": "not found"})
         if method != "GET":
             with LOCK:
-                WRITES.append({"via": "rest", "method": method, "path": path, "at": iso()})
+                WRITES.append(
+                    {"via": "rest", "method": method, "path": path, "at": iso()}
+                )
             return self._http(403, {"message": "the lab stub does not take writes"})
         self._http(404, {"message": "not found"})
 
     def _websocket(self, headers):
-        accept = base64.b64encode(hashlib.sha1(headers["sec-websocket-key"].encode() + GUID).digest()).decode()
-        self.wfile.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
-                          f"Sec-WebSocket-Accept: {accept}\r\n\r\n").encode())
+        accept = base64.b64encode(
+            hashlib.sha1(headers["sec-websocket-key"].encode() + GUID).digest()
+        ).decode()
+        self.wfile.write(
+            (
+                "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                f"Sec-WebSocket-Accept: {accept}\r\n\r\n"
+            ).encode()
+        )
         sock, send_lock, subs = self.request, threading.Lock(), []
         ws_send(sock, send_lock, {"type": "auth_required", "ha_version": "lab-stub"})
         msg = json.loads(ws_recv(self.rfile) or "{}")
         if msg.get("type") != "auth" or msg.get("access_token") != TOKEN:
-            ws_send(sock, send_lock, {"type": "auth_invalid", "message": "Invalid access token"})
+            ws_send(
+                sock,
+                send_lock,
+                {"type": "auth_invalid", "message": "Invalid access token"},
+            )
             return
         ws_send(sock, send_lock, {"type": "auth_ok", "ha_version": "lab-stub"})
         entry = (sock, send_lock, subs)
@@ -246,19 +296,44 @@ class Handler(socketserver.StreamRequestHandler):
                 kind, mid = m.get("type"), m.get("id")
                 if kind == "get_states":
                     with LOCK:
-                        ws_send(sock, send_lock, {"id": mid, "type": "result", "success": True,
-                                                  "result": list(STATES.values())})
-                elif kind == "subscribe_events" and m.get("event_type") == "state_changed":
+                        ws_send(
+                            sock,
+                            send_lock,
+                            {
+                                "id": mid,
+                                "type": "result",
+                                "success": True,
+                                "result": list(STATES.values()),
+                            },
+                        )
+                elif (
+                    kind == "subscribe_events"
+                    and m.get("event_type") == "state_changed"
+                ):
                     subs.append(mid)
-                    ws_send(sock, send_lock, {"id": mid, "type": "result", "success": True, "result": None})
+                    ws_send(
+                        sock,
+                        send_lock,
+                        {"id": mid, "type": "result", "success": True, "result": None},
+                    )
                 elif kind == "ping":
                     ws_send(sock, send_lock, {"id": mid, "type": "pong"})
                 else:  # call_service and everything else that would change or expose more
                     with LOCK:
                         WRITES.append({"via": "ws", "message": m, "at": iso()})
-                    ws_send(sock, send_lock, {"id": mid, "type": "result", "success": False,
-                                              "error": {"code": "unauthorized",
-                                                        "message": "the lab stub does not take this command"}})
+                    ws_send(
+                        sock,
+                        send_lock,
+                        {
+                            "id": mid,
+                            "type": "result",
+                            "success": False,
+                            "error": {
+                                "code": "unauthorized",
+                                "message": "the lab stub does not take this command",
+                            },
+                        },
+                    )
         finally:
             with LOCK:
                 if entry in CLIENTS:
