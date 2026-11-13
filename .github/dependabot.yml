@@ -1,0 +1,32 @@
+# Weekly update PRs for dependencies and GitHub Actions; security updates arrive on top of these.
+# Only what ships or builds for real is listed: lab and test images stay out so the PR list stays short.
+# Merge them like any other PR: CI runs first.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all: {patterns: ["*"]}
+  - package-ecosystem: "gomod"
+    directory: "/core/go"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+  - package-ecosystem: "pip"
+    directory: "/core/python"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+  - package-ecosystem: "pip"
+    directory: "/spec"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+  - package-ecosystem: "docker"
+    directory: "/ops/ha-addon/autonomy-station"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
