@@ -11,5 +11,6 @@
   "db": "/data/station-events.db",
   "heartbeat_s": 10,
   "retention_days": 30,
-  "cell": "field-station"
+  "cell": "field-station",
+  "status_file": "/status/status.json"
 }

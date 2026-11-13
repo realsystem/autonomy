@@ -72,7 +72,8 @@ station_events() { # n [kind]
 
 farm_up() {
   docker network inspect "$LAB_NETWORK" >/dev/null 2>&1 || docker network create "$LAB_NETWORK" >/dev/null
-  mkdir -p "$LAB_FARM_STATE/config"
+  mkdir -p "$LAB_FARM_STATE/config" "$LAB_FARM_STATE/status"
+  chmod 777 "$LAB_FARM_STATE/status" # the cell (uid 1000) writes status.json here; the bot reads it
   cp "$FARM/station.json" "$LAB_FARM_STATE/config/station.json"
   farmc up -d --build --wait
   touch "$FARM_FILE"

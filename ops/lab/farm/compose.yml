@@ -29,6 +29,7 @@ services:
     volumes:
       - ${LAB_STATE:?}/config:/config:ro
       - station-data:/data
+      - ${LAB_STATE:?}/status:/status
     networks: [lab]
     depends_on:
       ha: {condition: service_healthy}
