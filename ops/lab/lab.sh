@@ -3,7 +3,7 @@
 # (processor/lab), the edge node with stand-ins for Frigate and the host helpers
 # (edge_server/lab), and a real or mocked Telegram. No real model, no hardware, no cloud.
 #
-#   ops/lab/lab.sh up [--mock-telegram] [--pinned] [--farm] [--farm-config] [--baseline] [--only processor|edge_server|farm]
+#   ops/lab/lab.sh up [--mock-telegram] [--nodes] [--pinned] [--farm] [--farm-config] [--baseline] [--only processor|edge_server|farm]
 #   ops/lab/lab.sh down | status | logs [service] | reset | check
 #   ops/lab/lab.sh verify                 all scenarios, automatically (needs --mock-telegram)
 #   ops/lab/lab.sh scenarios              what to try by hand
@@ -161,6 +161,7 @@ cmd_up() {
     case "$a" in
       --mock-telegram) edge_args+=("$a") ;;
       --pinned) edge_args+=("$a") ;;
+      --nodes) edge_args+=("$a") ;; # a second node (Home Assistant add-on) next to the edge node
       --only) only="${1:-}"; shift || true ;;
       --farm) farm=1 ;;
       --farm-config) farm=1; farm_config=1 ;; # real Home Assistant loading the farm_automation repository
@@ -499,6 +500,7 @@ case "${1:-}" in
   say) shift; cmd_say "$@" ;;
   replies) shift; cmd_replies "$@" ;;
   cam) shift; cmd_cam "$@" ;;
+  edge) shift; "$EDGE/lab/lab.sh" "$@" ;; # the edge lab's own commands: edge code pi, edge say --bot pi "/fleet", edge pi-calls
   farm) shift; cmd_farm "$@" ;;
   *) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
