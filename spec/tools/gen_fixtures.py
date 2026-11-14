@@ -370,14 +370,6 @@ def control_order(kind: str = "hold", scope: str = "all") -> dict:
     }, "signature", "svc:approval")
 
 
-def peer_status() -> dict:
-    return sign({
-        "node": "cell:field-station", "issued_at": "2026-11-13T20:00:00Z", "counter": 1042,
-        "services": [{"name": "home-assistant", "state": "up"}, {"name": "autonomy-node", "state": "up"}],
-        "snapshot_age_s": 12,
-    }, "peer-status")
-
-
 def peer_request(action: str = "restart_service") -> dict:
     o = {
         "request_id": "prq_01JCA00000000000000000000" + ("1" if action == "restart_service" else "2"),
@@ -429,7 +421,6 @@ def valid_fixtures() -> dict[str, dict[str, object]]:
         "audit-record": {"chain": audit_chain()},
         "job": {"record": job(), "submission": job(submission=True)},
         "registry": {"two-site": registry()},
-        "peer-status": {"field-station": peer_status()},
         "peer-request": {"restart-service": peer_request(), "reboot-host": peer_request("reboot_host")},
         "registry-signature": {"ops": registry_signature()},
         "policy-bundle": {"farm": policy_bundle()},
@@ -600,11 +591,6 @@ def invalid_fixtures() -> list[tuple[str, str, str, str, object]]:
     case("policy-bundle", "duplicate-policy", "policy ids are unique", "used twice", pb, lambda o: o["policies"].append(dict(o["policies"][0])))
     case("approval", "attested-by-other-key", "attestation verifies with the attester's key", "does not verify",
          v["approval"]["attested"], setp(["attested_by"], "svc:verifier@field-station"))
-    ps = v["peer-status"]["field-station"]
-    case("peer-status", "tampered-counter", "status is signed", "does not verify", ps, setp(["counter"], 5))
-    case("peer-status", "unknown-state", "service states are up, degraded, down or unknown", "is not one of", ps,
-         setp(["services", 0, "state"], "fine"), "peer-status")
-    case("peer-status", "not-a-cell", "the signer is a cell", "does not match", ps, setp(["node"], "svc:pdp"))
     pr = v["peer-request"]["restart-service"]
     case("peer-request", "tampered-service", "requests are signed", "does not verify", pr, setp(["service"], "mosquitto"))
     case("peer-request", "no-code", "the owner's code is required", "'totp' is a required property", pr, setp(["totp"], DELETE), "peer-request")

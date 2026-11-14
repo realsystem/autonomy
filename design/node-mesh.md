@@ -2,7 +2,7 @@
 
 **Status:** Draft · 2026-11-13 · decision: [ADR-018](adr/ADR-018-independent-nodes-peer-mesh-and-owner-totp.md)
 
-Contract: `spec/schemas/v0/peer-status.schema.json` and `peer-request.schema.json` (contract `peer`); Python implementation `autonomy_core.peer` (`PeerWatch`, `RequestGuard`). The Go side is not built yet.
+Contract: `spec/schemas/v0/peer-request.schema.json` (contract `peer`), carried as the `control.command_request` envelope of the fleet control plane; Python implementation `autonomy_core.peer` (`RequestGuard`). The Go side is not built yet.
 
 ## 1. Shape
 
@@ -15,14 +15,11 @@ A site has two kinds of node, and each works alone:
 
 Nothing here names an address: each node's config lists its peers (`PEERS` file: id, URL, public key).
 
-## 2. Status: each node publishes, the peer polls
+## 2. Status: the fleet heartbeats
 
-- A node serves a small signed document: node id, time, a monotonic counter, the services it watches and their state, and the age of the Field Station snapshot if there is one. It carries no secrets and no camera data.
-- The peer polls it on an interval. The signature is checked against the registered public key. A stale counter or a bad signature counts as silence.
-- After `PEER_STALE_SECONDS` of silence the polling bot alerts its owner ("<node> not reporting"), then sends a recovery message. This reuses the Field Station alert logic and its hysteresis.
-- `/peer` in either bot shows the other node's last document.
+Status and silence alerts are not a new mechanism. Each node already sends signed heartbeats to its peers over the fleet control plane (`edge_server/telegram-bot/controlplane.py`), shows them in `/fleet`, and alerts when a node has been silent for `fleet.suspect_after`. The HA node joins the fleet as an `ha-addon` node (edge-system.md, "Roles and packaging"), so the Pi and the edge box watch each other with the same code. Nothing new is published.
 
-## 3. Requests: sign, check, then run through the receiver's own path
+## 3. Requests: sign, check, then run through the receiver's own path (`control.command_request`)
 
 A request to act on the peer (restart a service, reboot) is a signed envelope: sender, target, action, parameters, time, nonce, and **the owner's TOTP code**.
 
@@ -43,7 +40,7 @@ Reboots and restarts have a per-action cooldown, so two nodes cannot trigger eac
 
 ## 5. Tests (lab)
 
-Two lab nodes (the stand-in HA node and the edge). Scenarios: status is published and polled; silence raises one alert and one recovery; a request without a code, with a wrong code, with a reused code or sent late is refused; a replayed envelope is refused; a request outside the sender's grant is refused; the cooldown stops a second restart; each node keeps working with the other down.
+Two lab nodes (the stand-in HA node and the edge). Scenarios: a request without a code, with a wrong code, with a reused code or sent late is refused; a replayed envelope is refused; a request outside the sender's grant is refused; the cooldown stops a second restart; each node keeps working with the other down.
 
 ## 6. Out of scope for now
 

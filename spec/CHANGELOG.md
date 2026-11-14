@@ -8,7 +8,7 @@ Backward compatible with 0.5.
 
 - New schemas `model-request` and `model-usage` (contract `model`, ADR-017). A request names a task class and the data's privacy, never a provider. Usage records where the request went, what it cost and every attempt, with no prompt text.
 - `common`: `model_request_id` (`mdl_…`) and `locality` (`cell`, `site`, `owned`, `cloud`).
-- New schemas `peer-status` and `peer-request` (contract `peer`, ADR-018): a node's signed status for its peer, and a signed request to restart a named service or reboot the host that carries the owner's TOTP code. Signed by the node (`cell:<name>`).
+- New schema `peer-request` (contract `peer`, ADR-018) and envelope type `control.command_request`: a signed request from one fleet node to restart a named service or reboot the host, carrying the owner's TOTP code. The receiver verifies signature, grant and code before acting. Status and silence alerts are the fleet heartbeats, not a new document.
 - `manifest.agent` (optional, agents only): the read tools the agent host binds, `quarantined`, and `budgets` (tokens, model calls and proposals per day; run seconds). Conformance: an agent section only on agents, and a quarantined agent cannot propose actions.
 
 ## 0.5.0 — unreleased (M9)
