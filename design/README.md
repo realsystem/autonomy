@@ -76,6 +76,7 @@ Details: [development-roadmap.md](development-roadmap.md) · [integration-strate
 | [integration-strategy.md](integration-strategy.md) | Smallest foundation, parallel tracks, per-block plan |
 | [development-roadmap.md](development-roadmap.md) | Stages and milestones M0–M23 |
 | [lab.md](lab.md) | The whole system on a laptop: one orchestrator, a lab part per repo, real Telegram bot, mocked model and hardware (draft) |
+| [node-mesh.md](node-mesh.md) | Independent nodes (HA node on a Pi, edge node) that watch and ask each other; owner TOTP for every state change (draft, ADR-018) |
 | [field-station-reference-deployment.md](field-station-reference-deployment.md) | First reference deployment, step by step |
 | [architecture-tests.md](architecture-tests.md) | The 14 scenario tests and the design changes they forced |
 | [risks-and-open-questions.md](risks-and-open-questions.md) | Risks, owner decisions, unresolved questions |
