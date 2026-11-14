@@ -1,13 +1,11 @@
-"""Node mesh: a signed status for the peer, and signed requests to act on it (ADR-018).
+"""Node mesh: signed requests to act on a peer (ADR-018).
 
-Two things travel between nodes:
-
-* ``peer-status``: what a node publishes. The peer checks the signature, the age and that the
-  counter advanced, and treats anything else as silence (``PeerWatch``).
-* ``peer-request``: a request to restart a named service or reboot the host. It carries the
-  OWNER's TOTP code. ``RequestGuard`` runs on the receiving node: signature, target, age, replay,
-  grant, the code against the receiver's own secret, then a cooldown. Nothing here can run an
-  action; the caller does that through its own governed path after ``check`` returns.
+A ``peer-request`` asks a fleet node to restart a named service or reboot its host. It travels
+as the ``control.command_request`` envelope of the fleet control plane (status and silence alerts
+are that plane's heartbeats). It carries the OWNER's TOTP code. ``RequestGuard`` runs on the
+receiving node: signature, target, age, replay, grant, the code against the receiver's own
+secret, then a cooldown. Nothing here can run an action; the caller does that through its own
+governed path after ``check`` returns.
 
 The code check is a callable (``verify_code(code, now) -> bool``) so the bot's existing TOTP
 (single use per 30 s window) is reused rather than copied.
@@ -17,7 +15,7 @@ from __future__ import annotations
 
 import secrets
 import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -43,76 +41,6 @@ def parse_iso(text: str) -> float:
         return float(calendar.timegm(time.strptime(text[:19], "%Y-%m-%dT%H:%M:%S")))
     except (ValueError, TypeError) as exc:
         raise Reject("malformed", "issued_at") from exc
-
-
-# ----------------------------------------------------------------------------- status
-
-
-def make_status(
-    node: str,
-    key: Ed25519PrivateKey,
-    counter: int,
-    services: Iterable[Mapping[str, str]],
-    now: float | None = None,
-    snapshot_age_s: int | None = None,
-) -> dict[str, Any]:
-    doc: dict[str, Any] = {
-        "node": node,
-        "issued_at": iso(time.time() if now is None else now),
-        "counter": counter,
-        "services": [dict(s) for s in services],
-    }
-    if snapshot_age_s is not None:
-        doc["snapshot_age_s"] = int(snapshot_age_s)
-    return sign_object(doc, "peer-status", key)
-
-
-@dataclass
-class PeerWatch:
-    """What one node knows about its peer, from the documents it polled."""
-
-    keys: KeyRing
-    peer: str
-    stale_after_s: float = STATUS_MAX_AGE_S
-    clock: Clock = time.time
-    last_counter: int = -1
-    last_seen: float | None = None
-    last: dict[str, Any] | None = None
-    _alerted: bool = field(default=False, repr=False)
-
-    def accept(self, doc: Mapping[str, Any]) -> bool:
-        """True when ``doc`` is a fresh, genuine status from the peer; anything else is silence."""
-        try:
-            if doc.get("node") != self.peer:
-                raise Reject("wrong node")
-            verify_object(doc, "peer-status", self.keys)
-            now = self.clock()
-            if abs(now - parse_iso(str(doc["issued_at"]))) > self.stale_after_s:
-                raise Reject("stale")
-            counter = doc.get("counter")
-            if not isinstance(counter, int) or counter <= self.last_counter:
-                raise Reject("replayed")
-        except (Reject, KeyError, TypeError):
-            return False
-        self.last_counter = int(doc["counter"])
-        self.last_seen = self.clock()
-        self.last = dict(doc)
-        return True
-
-    def silent(self) -> bool:
-        if self.last_seen is None:
-            return False  # never seen: the first poll decides, not a timer
-        return self.clock() - self.last_seen > self.stale_after_s
-
-    def transitions(self) -> str | None:
-        """'lost' once when the peer goes silent, 'back' once when it returns, else None."""
-        if self.silent() and not self._alerted:
-            self._alerted = True
-            return "lost"
-        if not self.silent() and self._alerted and self.last_seen is not None:
-            self._alerted = False
-            return "back"
-        return None
 
 
 # ----------------------------------------------------------------------------- requests

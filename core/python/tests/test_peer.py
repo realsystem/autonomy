@@ -76,47 +76,6 @@ def request(keys, **kw):
     return peer.make_request(**args)
 
 
-# --------------------------------------------------------------------------- status
-
-
-def test_status_matches_the_schema_and_is_accepted(keys):
-    doc = peer.make_status(
-        PI, keys[0][PI], 1, [{"name": "home-assistant", "state": "up"}], NOW, snapshot_age_s=5
-    )
-    conforms("peer-status", {**doc})
-    w = peer.PeerWatch(keys[1], PI, clock=Clock())
-    assert w.accept(doc) and w.last["counter"] == 1
-
-
-def test_status_that_is_forged_old_replayed_or_from_the_wrong_node_is_silence(keys):
-    k, ring = keys
-    clock = Clock()
-    w = peer.PeerWatch(ring, PI, clock=clock)
-    good = peer.make_status(PI, k[PI], 5, [], NOW)
-    assert w.accept(good)
-    assert not w.accept(good)  # same counter: replay
-    forged = peer.make_status(PI, generate_private_key(), 6, [], NOW)
-    assert not w.accept(forged)
-    assert not w.accept(peer.make_status(PI, k[PI], 7, [], NOW - 1000))  # old
-    assert not w.accept(peer.make_status(EDGE, k[EDGE], 8, [], NOW))  # not the peer
-    tampered = dict(peer.make_status(PI, k[PI], 9, [], NOW), counter=99)
-    assert not w.accept(tampered)
-
-
-def test_one_alert_when_the_peer_goes_silent_and_one_when_it_returns(keys):
-    k, ring = keys
-    clock = Clock()
-    w = peer.PeerWatch(ring, PI, stale_after_s=60, clock=clock)
-    assert w.transitions() is None  # never seen: no alert
-    w.accept(peer.make_status(PI, k[PI], 1, [], clock()))
-    assert w.transitions() is None
-    clock.t += 61
-    assert w.transitions() == "lost" and w.transitions() is None
-    clock.t += 5
-    w.accept(peer.make_status(PI, k[PI], 2, [], clock()))
-    assert w.transitions() == "back" and w.transitions() is None
-
-
 # --------------------------------------------------------------------------- requests
 
 
