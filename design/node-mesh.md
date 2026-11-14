@@ -2,6 +2,8 @@
 
 **Status:** Draft · 2026-11-13 · decision: [ADR-018](adr/ADR-018-independent-nodes-peer-mesh-and-owner-totp.md)
 
+Contract: `spec/schemas/v0/peer-status.schema.json` and `peer-request.schema.json` (contract `peer`); Python implementation `autonomy_core.peer` (`PeerWatch`, `RequestGuard`). The Go side is not built yet.
+
 ## 1. Shape
 
 A site has two kinds of node, and each works alone:

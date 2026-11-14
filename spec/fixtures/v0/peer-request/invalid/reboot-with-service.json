@@ -1,0 +1,15 @@
+{
+  "description": "a reboot has no service",
+  "expect": "should not be valid",
+  "instance": {
+    "request_id": "prq_01JCA000000000000000000002",
+    "from": "cell:home-hub",
+    "to": "cell:field-station",
+    "action": "reboot_host",
+    "issued_at": "2026-11-13T20:00:05Z",
+    "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+    "totp": "492817",
+    "signature": "ed25519:Ofdi9_0_pLdu3QJczBOU6rNCGD3MQWCSetLy4yvkxdG_q597UfvklARp63QPaNS2NxO10A32fo54-d7URJG-AA",
+    "service": "frigate"
+  }
+}

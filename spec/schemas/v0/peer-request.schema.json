@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/peer-request.schema.json",
+  "title": "Peer request",
+  "description": "A request from one node to act on its peer (node mesh, ADR-018): restart a named service or reboot the host. Signed by the sending node. It carries the OWNER's TOTP code: the receiver verifies the signature, the grant and the code against its own secret before it acts, so no automated path can restart or reboot a node. The receiver runs the action through its own governed path.",
+  "type": "object",
+  "required": ["request_id", "from", "to", "action", "issued_at", "nonce", "totp", "signature"],
+  "properties": {
+    "request_id": { "type": "string", "pattern": "^prq_[A-Za-z0-9_-]{1,64}$" },
+    "from": { "type": "string", "pattern": "^cell:[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 64 },
+    "to": { "type": "string", "pattern": "^cell:[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 64 },
+    "action": { "type": "string", "enum": ["restart_service", "reboot_host"] },
+    "service": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,62}$" },
+    "issued_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "nonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16,64}$" },
+    "totp": {
+      "description": "The owner's six-digit code for the receiving node. Single use per 30-second window on the receiver.",
+      "type": "string",
+      "pattern": "^[0-9]{6}$"
+    },
+    "signature": { "$ref": "common.schema.json#/$defs/signature" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "action": { "const": "restart_service" } }, "required": ["action"] },
+      "then": { "required": ["service"] },
+      "else": { "not": { "required": ["service"] } }
+    }
+  ],
+  "additionalProperties": false
+}

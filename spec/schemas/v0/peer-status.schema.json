@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomy.local/spec/v0/peer-status.schema.json",
+  "title": "Peer status",
+  "description": "What one node publishes for its peer (node mesh, ADR-018): signed by the node's own key. The peer polls it; a bad signature, an old issued_at or a counter that did not advance counts as silence. It carries no secrets and no camera or sensor data.",
+  "type": "object",
+  "required": ["node", "issued_at", "counter", "services", "signature"],
+  "properties": {
+    "node": {
+      "description": "The publishing node, cell:<name>. It is also the signer.",
+      "type": "string",
+      "pattern": "^cell:[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "issued_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "counter": {
+      "description": "Strictly increasing per node (it survives restarts); a document whose counter did not advance is a replay.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "services": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": ["name", "state"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,62}$" },
+          "state": { "type": "string", "enum": ["up", "degraded", "down", "unknown"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "snapshot_age_s": {
+      "description": "Age of the Field Station snapshot, when the node has one.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "signature": { "$ref": "common.schema.json#/$defs/signature" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,10 @@
+{
+  "request_id": "prq_01JCA000000000000000000002",
+  "from": "cell:home-hub",
+  "to": "cell:field-station",
+  "action": "reboot_host",
+  "issued_at": "2026-11-13T20:00:05Z",
+  "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+  "totp": "492817",
+  "signature": "ed25519:EUsqMZbbwLqQY-b77-gymlRhZKBTMK65q47amUghKc4C1an8iuqtLkNnkq3_rIyoRE5B67yPt3ig8A5zEy1XCA"
+}

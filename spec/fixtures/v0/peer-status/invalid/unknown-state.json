@@ -1,0 +1,21 @@
+{
+  "description": "service states are up, degraded, down or unknown",
+  "expect": "is not one of",
+  "instance": {
+    "node": "cell:field-station",
+    "issued_at": "2026-11-13T20:00:00Z",
+    "counter": 1042,
+    "services": [
+      {
+        "name": "home-assistant",
+        "state": "fine"
+      },
+      {
+        "name": "autonomy-node",
+        "state": "up"
+      }
+    ],
+    "snapshot_age_s": 12,
+    "signature": "ed25519:3jBPGWFD0BHRVwKk8o-H8LGEnf5v9wZjVXSDuCQzy2Cc_Tf8gHTIbbBgSUQHueQ25WULb9gGl_SaO-7FGs4IAQ"
+  }
+}
