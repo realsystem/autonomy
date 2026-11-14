@@ -29,6 +29,7 @@ CONTRACTS = {
     "job": ["job"],
     "registry": ["registry", "registry-signature"],
     "model": ["model-request", "model-usage"],
+    "peer": ["peer-status", "peer-request"],
 }
 
 # Conformance level -> contracts the manifest must declare.

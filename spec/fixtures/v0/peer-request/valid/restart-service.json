@@ -1,0 +1,11 @@
+{
+  "request_id": "prq_01JCA000000000000000000001",
+  "from": "cell:home-hub",
+  "to": "cell:field-station",
+  "action": "restart_service",
+  "issued_at": "2026-11-13T20:00:05Z",
+  "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+  "totp": "492817",
+  "service": "frigate",
+  "signature": "ed25519:sRN4C_MUGTuJSBZYT_zsviba2wttjY-C6ixmxT2GsdX5juk18FU7iJ2VMQ4a8p-4TQ2u6X9Bf4c6XZJs-DewCg"
+}

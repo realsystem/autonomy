@@ -1,0 +1,15 @@
+{
+  "description": "restart_service or reboot_host",
+  "expect": "is not one of",
+  "instance": {
+    "request_id": "prq_01JCA000000000000000000001",
+    "from": "cell:home-hub",
+    "to": "cell:field-station",
+    "action": "shell",
+    "issued_at": "2026-11-13T20:00:05Z",
+    "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+    "totp": "492817",
+    "service": "frigate",
+    "signature": "ed25519:lHu5WUD1tYve0gEsd3uvRKZrvZPAnQsuVJwb-rTYAXdD4Ek8GSRGi-AqYl0C-LVT1DMg4fvBV6sEnoh_JPDvCg"
+  }
+}

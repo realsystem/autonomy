@@ -1,0 +1,14 @@
+{
+  "description": "the owner's code is required",
+  "expect": "'totp' is a required property",
+  "instance": {
+    "request_id": "prq_01JCA000000000000000000001",
+    "from": "cell:home-hub",
+    "to": "cell:field-station",
+    "action": "restart_service",
+    "issued_at": "2026-11-13T20:00:05Z",
+    "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+    "service": "frigate",
+    "signature": "ed25519:ckwMAr_WM3_2COsXr1hLI8nJCcb4Mw8xPSOpqi7tPZwMYZ3M-Kcp7_weh2mm4ULjLveSDcyvCSXXybSqniKiCQ"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "description": "a restart names its service",
+  "expect": "'service' is a required property",
+  "instance": {
+    "request_id": "prq_01JCA000000000000000000001",
+    "from": "cell:home-hub",
+    "to": "cell:field-station",
+    "action": "restart_service",
+    "issued_at": "2026-11-13T20:00:05Z",
+    "nonce": "Zm9vYmFyYmF6cXV4MTIzNDU2",
+    "totp": "492817",
+    "signature": "ed25519:3s4KyeNTEZr-arruWfpZICfDCDY59Jxo8Zl9_O6b34vQXpNH60QKc-O1B_wBjnVVw4PbEfoG_5KiVK7W7dtiBg"
+  }
+}

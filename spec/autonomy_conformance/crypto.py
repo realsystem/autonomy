@@ -31,6 +31,8 @@ SIGNED = {
     "verification": ("signature", "verifier"),
     "audit-record": ("signature", "actor"),
     "control-order": ("signature", "issued_by"),
+    "peer-status": ("signature", "node"),
+    "peer-request": ("signature", "from"),
 }
 
 # Kinds an approval service may sign on the owner's behalf: attested_by is then the signer.

@@ -22,6 +22,8 @@ SIGNED: dict[str, tuple[str, str]] = {
     "verification": ("signature", "verifier"),
     "audit-record": ("signature", "actor"),
     "control-order": ("signature", "issued_by"),
+    "peer-status": ("signature", "node"),
+    "peer-request": ("signature", "from"),
 }
 
 
