@@ -19,5 +19,6 @@
 | [ADR-015](ADR-015-core-library-location-and-consumption.md) | Core library (C02) lives in `realsystem/autonomy/core/`, consumed by pinned ref | Proposed |
 | [ADR-016](ADR-016-registry-signing-and-trust-anchor.md) | Registry: detached signature with serial, root-signed owners, root pinned on first use | Proposed |
 | [ADR-017](ADR-017-model-gateway-and-agent-host-in-core.md) | Model Gateway and Agent Host built in `autonomy-core`; `jarvis` out of scope | Accepted |
+| [ADR-018](ADR-018-independent-nodes-peer-mesh-and-owner-totp.md) | Independent nodes, HAOS node managed from the edge, peer protocol, owner TOTP for every state change | Accepted |
 
 Provisional decisions are expected to change when their revisit condition is met.
