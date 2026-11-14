@@ -2,7 +2,7 @@
 
 **Status:** Draft · 2026-11-13 · decision: [ADR-018](adr/ADR-018-independent-nodes-peer-mesh-and-owner-totp.md)
 
-Contract: `spec/schemas/v0/peer-request.schema.json` (contract `peer`), carried as the `control.command_request` envelope of the fleet control plane; Python implementation `autonomy_core.peer` (`RequestGuard`). The Go side is not built yet.
+Contract: `spec/schemas/v0/peer-request.schema.json` (contract `peer`), carried in the `request` field of the fleet control plane's `control.command_request` envelope (`data = {to, request}`); Python implementation `autonomy_core.peer` (`RequestGuard`). The Go side is not built yet.
 
 ## 1. Shape
 

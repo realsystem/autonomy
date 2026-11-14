@@ -54,7 +54,6 @@ TYPE_SCHEMAS = {
     "action.cancelled": "execution-record",
     "action.verified": "verification",
     "authority.granted": "grant",
-    "control.command_request": "peer-request",
     "system.suspended": "control-order",
     "system.resumed": "control-order",
     "health.reported": "health",
