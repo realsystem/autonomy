@@ -80,6 +80,15 @@ r = urllib.request.Request("http://alab-ha:8123/api/states/" + sys.argv[1], json
 print(urllib.request.urlopen(r, timeout=30).status)' "$1" "$2" >/dev/null
 }
 
+ha_real_installed() { # input_datetime entity: set to 30 days ago
+  docker exec "${LAB_PROJECT}-station" python -c '
+import datetime, json, os, sys, urllib.request
+when = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+r = urllib.request.Request("http://alab-ha:8123/api/services/input_datetime/set_datetime", json.dumps({"entity_id": sys.argv[1], "datetime": when}).encode(),
+    {"Authorization": "Bearer " + os.environ["HA_TOKEN"], "Content-Type": "application/json"})
+print(urllib.request.urlopen(r, timeout=30).status)' "$1" >/dev/null
+}
+
 ha_admin() { # METHOD PATH [json]: the Home Assistant stand-in's admin API
   docker exec "${LAB_PROJECT}-ha" python -c '
 import sys, urllib.request
@@ -128,9 +137,15 @@ PY
     python /s/setup.py http://alab-ha:8123 /out/ha-token
   farmc up -d station
   # a live gateway pushes its readings: seed the raw soil entities so the farm_* sensors have something to say
+  # (only the probes; the weather station is not simulated in this path)
   for raw in $(docker run --rm -v "$FA:/farm:ro" alab-station:lab python /farm/tools/farm.py allowlist | tr -d '[]"' | tr ',' ' '); do
-    case "$raw" in *\**) ;; *) ha_real_set "$raw" 35 ;; esac
+    case "$raw" in *soil_moisture*) ha_real_set "$raw" 35 ;; esac
   done
+  # farm_automation's quality layer keeps a probe out of the rules while it settles after installation, and its
+  # placeholder install dates are in the future: tell Home Assistant the probes went in a month ago
+  docker run --rm -v "$FA:/farm:ro" alab-station:lab python /farm/tools/farm.py entities \
+    | python3 -c 'import json,sys;print("\n".join(e for e in json.load(sys.stdin)["farm"] if e.startswith("input_datetime.")))' \
+    | while read -r helper; do ha_real_installed "$helper"; done
 }
 
 farm_check() {
